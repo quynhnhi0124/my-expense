@@ -14,6 +14,7 @@
     "paths": {
       "@shared/*": ["./src/app/shared/*"],
       "@features/*": ["./src/app/features/*"],
+      "@core/*": ["./src/app/core/*"],
       "@spartan-ng/helm/accordion": ["./src/shared/libs/ui/accordion/src/index.ts"],
       "@spartan-ng/helm/alert": ["./src/shared/libs/ui/alert/src/index.ts"],
       "@spartan-ng/helm/alert-dialog": ["./src/shared/libs/ui/alert-dialog/src/index.ts"],

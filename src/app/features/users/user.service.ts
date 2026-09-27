@@ -1,8 +1,8 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { users } from './data/users';
-import { ApiResponse, SearchParams } from '@shared/interfaces';
+import { MOCK_USERS } from './data/users';
+import { ApiGetListResponse, SearchParams } from '@shared/interfaces';
 import { User } from '@features/users/user.interface';
 
 @Injectable({
@@ -15,15 +15,15 @@ export class UserService {
     page = '1',
     limit = '30',
     search = '',
-  }: SearchParams): Observable<ApiResponse<User>> {
+  }: SearchParams): Observable<ApiGetListResponse<User>> {
     // const params = new HttpParams()
     //   .set('_page', page.toString())
     //   .set('_limit', limit.toString())
     //   .set('q', search);
-    // return this._http.get<ApiResponse<User>>("", {params})
-    const res: ApiResponse<User> = {
-      data: users,
-      rowCount: users.length,
+    // return this._http.get<ApiGetListResponse<User>>("", {params})
+    const res: ApiGetListResponse<User> = {
+      data: MOCK_USERS,
+      rowCount: MOCK_USERS.length,
       skip: 0,
       limit: 10,
     };

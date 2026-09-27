@@ -1,28 +1,55 @@
 <div class="w-full min-h-svh flex justify-center items-center">
   <div class="w-full max-w-sm">
-    <div class="flex flex-col justify-center items-center">
-      <!-- <mat-card appearance="outlined" class="shadow-sm gap-6">
-        <mat-card-header>
-          <mat-card-title>Login</mat-card-title>
-          <mat-card-subtitle class="text-gray-500"><span>Enter your email below to login to your account</span></mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          <form [formGroup]="loginForm" type="submit">
-            <mat-form-field appearance="outline" class="w-full">
-              <mat-label >Email</mat-label>
-              <input matInput formControlName="email" placeholder="Enter your email">
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="w-full">
-              <mat-label>Password</mat-label>
-              <input matInput formControlName="password" placeholder="Enter your password" type="password">
-            </mat-form-field>
-          </form>
-        </mat-card-content>
-        <mat-card-footer class="flex flex-col justify-center items-center gap-4 p-4 pt-0">
-          <button matButton="tonal" class="w-full">Login</button>
-          <span class="text-gray-500">Don't have an account? Sign up</span>
-        </mat-card-footer>
-      </mat-card> -->
-    </div>
+    <hlm-card>
+      <hlm-card-header>
+        <h3 hlmCardTitle>Login to your account</h3>
+        <p hlmCardDescription>Enter your email below to login to your account</p>
+      </hlm-card-header>
+      <div hlmCardContent>
+        <form [formGroup]="loginForm" (submit)="onSubmit()" type="submit">
+          <hlm-field-group>
+            <hlm-field class="flex flex-col">
+              <label hlmFieldLabel for="email">Email</label>
+              <input hlmInput id="email" placeholder="Enter your email" formControlName="email" />
+              @if(email && email.touched && email.invalid) {
+              @if(email.hasError('required')) {
+              <hlm-field-error [validator]="'required'">Email is required</hlm-field-error>
+              }
+              @if(email.hasError('email')) {
+              <hlm-field-error [validator]="'email'">Invalid email address</hlm-field-error>
+              }
+              <!-- @if(email.hasError('invalidPattern')) {
+                  <hlm-field-error [validator]="'invalidPattern'">Invalid email pattern</hlm-field-error>
+                } -->
+              }
+            </hlm-field>
+            <hlm-field class="flex flex-col">
+              <label hlmFieldLabel for="password">Password</label>
+              <input hlmInput type="password" id="password" placeholder="Enter your password"
+                formControlName="password" />
+              @if(password && password.touched && password.invalid) {
+              @if(password.hasError('required')) {
+              <hlm-field-error [validator]="'required'">Password is required</hlm-field-error>
+              }
+              }
+            </hlm-field>
+            <hlm-field class="flex flex-col">
+              <button hlmBtn type="submit" class="cursor-pointer" [disabled]="loginForm.invalid || isSubmitting()">
+                @if (isSubmitting()) {
+                <hlm-spinner />
+                Logging in...
+                } @else {
+                Login
+                }
+              </button>
+              <p hlmFieldDescription class="text-center">
+                Don't have an account?
+                <a routerLink="/signup">Sign up</a>
+              </p>
+            </hlm-field>
+          </hlm-field-group>
+        </form>
+      </div>
+    </hlm-card>
   </div>
 </div>

@@ -1,7 +1,7 @@
 import { Role } from "../user.enum";
 import { User } from "../user.interface";
 
-export const users: User[] = [
+export const MOCK_USERS: User[] = [
   {
     id: 1,
     firstName: 'Emily',
