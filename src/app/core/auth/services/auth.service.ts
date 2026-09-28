@@ -1,24 +1,16 @@
-import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { LoginRequest, LoginResponse } from '@features/auth/models/auth.model';
-import { MOCK_USERS } from '@features/users';
-import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
+import { MOCK_USERS, User } from '@features/users';
+import { BehaviorSubject, delay, finalize, Observable, of, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  private readonly http = inject(HttpClient);
   private readonly accessTokenKey = 'access_token';
-  currentUser = new BehaviorSubject({});
-
-  getAuthToken() {
-    return 'auth';
-  }
-
-  isLoggedIn() {
-    return false;
-  }
+  private readonly currentUserKey = 'currentUser';
+  private readonly currentUser = new BehaviorSubject<User | null>(this.getCurrentUser());
+  currentUser$ = this.currentUser.asObservable(); //expose the subject behavior
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     const user = MOCK_USERS.find(
@@ -32,24 +24,42 @@ export class AuthService {
       accessToken: `access-token-${user.id}`,
       user: userInfo,
     });
-    // return this.http.post<LoginResponse>('/api/login', credentials).pipe(
-    //     tap((response) => {
-    //       localStorage.setItem(
-    //         'access_token',
-    //         response.accessToken
-    //       );
-
-    //       this.currentUser.set(response.user);
-    //     })
-    //   );;
   }
 
-  getAccessToken() {
+  logout(): Observable<void> {
+    return of(void 0).pipe(
+      delay(500), // call logOut API
+      finalize(() => this.clearSession()), // clear session when request fulfill
+    );
+  }
+
+  getAccessToken(): string | null | void {
     return localStorage.getItem(this.accessTokenKey);
   }
 
+  getCurrentUser() {
+    const currentUser = localStorage.getItem(this.currentUserKey);
+
+    if (!currentUser) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(currentUser) as User;
+    } catch {
+      return null;
+    }
+  }
+
   setSession(response: LoginResponse): void {
-    localStorage.setItem('access_token', response.accessToken);
+    localStorage.setItem(this.accessTokenKey, response.accessToken);
+    localStorage.setItem(this.currentUserKey, JSON.stringify(response.user));
     this.currentUser.next(response.user);
+  }
+
+  clearSession(): void {
+    localStorage.removeItem(this.accessTokenKey);
+    localStorage.removeItem(this.currentUserKey);
+    this.currentUser.next(null);
   }
 }

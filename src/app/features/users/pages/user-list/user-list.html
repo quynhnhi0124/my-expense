@@ -14,9 +14,14 @@
             @for (header of headerGroup.headers; track header.id) {
             <th hlmTh [attr.colSpan]="header.colSpan">
               @if (!header.isPlaceholder) {
-              <ng-container *flexRender="header.column.columnDef.header; props: header.getContext(); let headerText">
-                <div [innerHTML]="headerText"></div>
+              <ng-container *flexRenderHeader="header; let headerCell">
+                {{ headerCell }}
               </ng-container>
+              @if (header.column.getCanFilter()) {
+              <div>
+                <app-table-filter [column]="header.column" [table]="table" />
+              </div>
+              }
               }
             </th>
             }
@@ -26,10 +31,10 @@
         <tbody hlmTBody class="w-full">
           @for (row of table.getRowModel().rows; track row.id) {
           <tr hlmTr [attr.key]="row.id">
-            @for (cell of row.getVisibleCells(); track $index) {
+            @for (cell of row.getAllCells(); track cell.id) {
             <td hlmTd>
-              <ng-container *flexRender="cell.column.columnDef.cell; props: cell.getContext(); let cell">
-                <div [innerHTML]="cell"></div>
+              <ng-container *flexRenderCell="cell; let renderCell">
+                {{ renderCell }}
               </ng-container>
             </td>
             }

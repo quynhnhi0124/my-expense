@@ -8,8 +8,8 @@ export const authGuard: CanActivateFn = (
   state: RouterStateSnapshot
 ) => {
   const router = inject(Router);
-  const _authService = inject(AuthService);
-  const isLoggedIn = _authService.getAccessToken();
+  const authService = inject(AuthService);
+  const isLoggedIn = authService.getAccessToken();
   if (!isLoggedIn) {
     // Optional: Pass the attempted URL as a query param to redirect back after login
     return router.createUrlTree([RoutePath.auth.login])

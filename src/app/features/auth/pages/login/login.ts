@@ -31,14 +31,13 @@ import { finalize } from 'rxjs';
   templateUrl: './login.html',
 })
 export class Login {
-  private readonly _authService = inject(AuthService);
+  private readonly authService = inject(AuthService);
   readonly isSubmitting = signal<boolean>(false);
   readonly router = inject(Router);
   loginForm = new FormGroup({
     email: new FormControl('', [
       Validators.required,
-      Validators.email,
-      // this.emailValidator(/^[a-zA-Z0-9_-]{3,16}$/),
+      Validators.email
     ]),
     password: new FormControl('', [Validators.required]),
   });
@@ -51,16 +50,8 @@ export class Login {
     return this.loginForm.get('password');
   }
 
-  // emailValidator(pattern: RegExp): ValidatorFn {
-  //   return (control: AbstractControl): ValidationErrors | null => {
-  //     const valid = pattern.test(control.value);
-  //     console.log(control, valid, pattern,pattern.test(control.value) )
-  //     return valid ? null : { invalidPattern: true };
-  //   };
-  // }
-
   onSubmit() {
-    this._authService
+    this.authService
       .login(this.loginForm.value as LoginRequest)
       .pipe(
         // runs when Observable ends
@@ -71,7 +62,7 @@ export class Login {
       .subscribe({
         next: (res) => {
           toast.success('Successfully logged in');
-          this._authService.setSession(res);
+          this.authService.setSession(res);
           this.router.navigate(['/users']);
         },
         error: () => {

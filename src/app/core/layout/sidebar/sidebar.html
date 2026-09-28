@@ -1,3 +1,4 @@
+@let user = currentUser$ | async;
 <div hlmSidebarWrapper>
   <hlm-sidebar variant="inset">
     <hlm-sidebar-header>
@@ -19,20 +20,18 @@
 
     <hlm-sidebar-content>
       <nav-items [items]="data.navMain" />
-      <!-- <spartan-nav-projects [projects]="data.projects" />
-					<spartan-nav-secondary class="mt-auto" [items]="data.navSecondary" />  -->
     </hlm-sidebar-content>
     <hlm-sidebar-footer>
       <ul hlmSidebarMenu>
         <li hlmSidebarMenuItem>
           <button hlmSidebarMenuButton size="lg" [hlmDropdownMenuTrigger]="menu" [side]="_menuSide()" align="end">
             <hlm-avatar class="rounded-lg">
-              <img [src]="user.avatar" [alt]="user.name" hlmAvatarImage />
+              <img [src]="'#'" [alt]="user?.email" hlmAvatarImage />
               <span class="rounded-lg bg-[#FD005B] text-white" hlmAvatarFallback>RG</span>
             </hlm-avatar>
             <div class="grid flex-1 text-left text-sm leading-tight">
-              <span class="truncate font-medium">{{ user.name }}</span>
-              <span class="truncate text-xs">{{ user.email }}</span>
+              <span class="truncate font-medium">{{ `${user?.firstName} ${user?.lastName}` }}</span>
+              <span class="truncate text-xs">{{ user?.email }}</span>
             </div>
             <ng-icon name="lucideChevronsUpDown" class="ml-auto text-base" />
           </button>
@@ -42,12 +41,12 @@
             <hlm-dropdown-menu-label>
               <div class="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <hlm-avatar class="rounded-lg">
-                  <img [src]="user.avatar" [alt]="user.name" hlmAvatarImage />
+                  <img [src]="'#'" [alt]="user?.email" hlmAvatarImage />
                   <span class="rounded-lg bg-[#FD005B] text-white" hlmAvatarFallback>RG</span>
                 </hlm-avatar>
                 <div class="grid flex-1 text-left text-sm leading-tight">
-                  <span class="truncate font-medium">{{ user.name }}</span>
-                  <span class="truncate text-xs">{{ user.email }}</span>
+                  <span class="truncate font-medium">{{ `${user?.firstName} ${user?.lastName}` }}</span>
+                  <span class="truncate text-xs">{{ user?.email }}</span>
                 </div>
               </div>
             </hlm-dropdown-menu-label>
@@ -55,33 +54,17 @@
             <hlm-dropdown-menu-group>
               <button hlmDropdownMenuItem>
                 <ng-icon name="lucideSparkles" />
-                Upgrade to Pro
+                Notification
               </button>
             </hlm-dropdown-menu-group>
             <hlm-dropdown-menu-separator />
-            <hlm-dropdown-menu-group>
-              <button hlmDropdownMenuItem>
-                <ng-icon name="lucideBadgeCheck" />
-                Account
-              </button>
-              <button hlmDropdownMenuItem>
-                <ng-icon name="lucideCreditCard" />
-                Billing
-              </button>
-              <button hlmDropdownMenuItem>
-                <ng-icon name="lucideBell" />
-                Notifications
-              </button>
-            </hlm-dropdown-menu-group>
-            <hlm-dropdown-menu-separator />
-            <button hlmDropdownMenuItem>
+            <button hlmDropdownMenuItem (click)="logout()">
               <ng-icon name="lucideLogOut" />
               Log out
             </button>
           </hlm-dropdown-menu>
         </ng-template>
       </ul>
-      <!-- <spartan-nav-user [user]="data.user" /> -->
     </hlm-sidebar-footer>
   </hlm-sidebar>
   <ng-content />
