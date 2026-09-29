@@ -7,5 +7,8 @@ export const RoutePath = {
   users: {
     list: 'users',
     detail: (id: string) => `users/${id}`
+  },
+  expenses: {
+    list: 'expenses',
   }
 }

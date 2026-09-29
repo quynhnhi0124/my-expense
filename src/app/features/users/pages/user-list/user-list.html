@@ -1,51 +1,91 @@
-<div class="h-full flex-1 flex-col space-y-4 rounded-lg p-8 py-6 md:flex">
-  <div class="flex items-center-justify-between space-y-2">
-    <div class="flex flex-col">
-      <h2 class="text-2xl font-bold tracking-tight">Welcome back!</h2>
-      <p class="text-muted-foreground">Here's a list of your tasks for this month!</p>
-    </div>
+<div class="h-full flex-1 space-y-4 p-8 py-6">
+  <header>
+    <h2 class="text-2xl font-bold tracking-tight">Users</h2>
+    <p class="text-muted-foreground">Manage user accounts and access.</p>
+  </header>
+
+  <div class="flex items-center">
+    <input
+      hlmInput
+      type="search"
+      class="w-full md:max-w-sm"
+      placeholder="Search first name, last name, or email..."
+      aria-label="Search users by first name, last name, or email"
+      [formControl]="searchControl"
+    />
   </div>
-  <div class="max-h-175 w-full overflow-auto rounded-md border">
+
+  <div class="w-full overflow-auto rounded-md border">
     <div hlmTableContainer>
       <table hlmTable>
         <thead hlmTHead class="bg-background sticky top-0">
           @for (headerGroup of table.getHeaderGroups(); track headerGroup.id) {
-          <tr hlmTr>
-            @for (header of headerGroup.headers; track header.id) {
-            <th hlmTh [attr.colSpan]="header.colSpan">
-              @if (!header.isPlaceholder) {
-              <ng-container *flexRenderHeader="header; let headerCell">
-                {{ headerCell }}
-              </ng-container>
-              @if (header.column.getCanFilter()) {
-              <div>
-                <app-table-filter [column]="header.column" [table]="table" />
-              </div>
+            <tr hlmTr>
+              @for (header of headerGroup.headers; track header.id) {
+                <th hlmTh [attr.colSpan]="header.colSpan">
+                  @if (!header.isPlaceholder) {
+                    @if (header.column.getCanSort()) {
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="sm"
+                        class="-ml-3 h-8"
+                        (click)="header.column.toggleSorting(header.column.getIsSorted() === 'asc')"
+                      >
+                        <ng-container *flexRender="header.column.columnDef.header; props: header.getContext(); let headerCell">
+                          {{ headerCell }}
+                        </ng-container>
+                        @if (header.column.getIsSorted() === 'asc') {
+                          <ng-icon name="lucideArrowUp" />
+                        } @else if (header.column.getIsSorted() === 'desc') {
+                          <ng-icon name="lucideArrowDown" />
+                        } @else {
+                          <ng-icon name="lucideArrowUpDown" />
+                        }
+                      </button>
+                    } @else {
+                      <ng-container *flexRender="header.column.columnDef.header; props: header.getContext(); let headerCell">
+                        {{ headerCell }}
+                      </ng-container>
+                    }
+                  }
+                </th>
               }
-              }
-            </th>
-            }
-          </tr>
+            </tr>
           }
         </thead>
-        <tbody hlmTBody class="w-full">
+        <tbody hlmTBody>
           @for (row of table.getRowModel().rows; track row.id) {
-          <tr hlmTr [attr.key]="row.id">
-            @for (cell of row.getAllCells(); track cell.id) {
-            <td hlmTd>
-              <ng-container *flexRenderCell="cell; let renderCell">
-                {{ renderCell }}
-              </ng-container>
-            </td>
-            }
-          </tr>
+            <tr hlmTr>
+              @for (cell of row.getAllCells(); track cell.id) {
+                <td hlmTd>
+                  <ng-container *flexRender="cell.column.columnDef.cell; props: cell.getContext(); let renderCell">
+                    {{ renderCell }}
+                  </ng-container>
+                </td>
+              }
+            </tr>
           } @empty {
-          <tr hlmTr>
-            <td hlmTd class="h-24 text-center" [attr.colspan]="columns.length">No results.</td>
-          </tr>
+            <tr hlmTr>
+              <td hlmTd class="h-24 text-center" [attr.colspan]="columns.length">No users found.</td>
+            </tr>
           }
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-end gap-4">
+    <span class="text-muted-foreground text-sm">
+      Page {{ table.atoms.pagination.get().pageIndex + 1 }} of {{ table.getPageCount() }}
+    </span>
+    <div class="flex gap-2">
+      <button hlmBtn variant="outline" size="sm" [disabled]="!table.getCanPreviousPage()" (click)="table.previousPage()">
+        Previous
+      </button>
+      <button hlmBtn variant="outline" size="sm" [disabled]="!table.getCanNextPage()" (click)="table.nextPage()">
+        Next
+      </button>
     </div>
   </div>
 </div>

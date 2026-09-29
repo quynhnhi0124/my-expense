@@ -1,0 +1,14 @@
+<button hlmBtn type="button" size="icon-sm" variant="ghost" aria-label="User actions" [hlmDropdownMenuTrigger]="menu"
+  align="start">
+  <ng-icon name="lucideEllipsis" />
+</button>
+<ng-template #menu>
+  <hlm-dropdown-menu class="w-40">
+    <hlm-dropdown-menu-group>
+      <hlm-dropdown-menu-label>Actions</hlm-dropdown-menu-label>
+    </hlm-dropdown-menu-group>
+    <button hlmDropdownMenuItem>
+      Details
+    </button>
+  </hlm-dropdown-menu>
+</ng-template>

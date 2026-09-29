@@ -1,1 +1,92 @@
-<p>signup works!</p>
+<div class="w-full min-h-svh flex justify-center items-center">
+	<div class="w-full max-w-sm">
+		<hlm-card>
+			<hlm-card-header>
+				<h3 hlmCardTitle>Create an account</h3>
+				<p hlmCardDescription>Enter your information below to create your account</p>
+			</hlm-card-header>
+			<div hlmCardContent>
+				<form [formGroup]="signupForm" (submit)="onSubmit()">
+					<hlm-field-group>
+						<hlm-field class="flex flex-col">
+							<label hlmFieldLabel for="firstName">First name</label>
+							<input hlmInput id="firstName" placeholder="Enter your first name" formControlName="firstName" />
+							@if (firstName && firstName.touched && firstName.invalid) {
+								@if (firstName.hasError('required')) {
+									<hlm-field-error [validator]="'required'">First name is required</hlm-field-error>
+								}
+                @else if (firstName.hasError('pattern')) {
+                    <hlm-field-error [validator]="'pattern'">Use letters and spaces only</hlm-field-error>
+                }
+                @else if (firstName.hasError('minlength') || firstName.hasError('maxlength')) {
+									<hlm-field-error [validator]="'minlength'">First name must be 2-30 characters</hlm-field-error>
+								}
+							}
+						</hlm-field>
+						<hlm-field class="flex flex-col">
+							<label hlmFieldLabel for="lastName">Last name</label>
+							<input hlmInput id="lastName" placeholder="Enter your last name" formControlName="lastName" />
+							@if (lastName && lastName.touched && lastName.invalid) {
+								@if (lastName.hasError('required')) {
+									<hlm-field-error [validator]="'required'">Last name is required</hlm-field-error>
+								}
+                @else if (lastName.hasError('pattern')) {
+                    <hlm-field-error [validator]="'pattern'">Use letters and spaces only</hlm-field-error>
+                }
+								@else if (lastName.hasError('minlength') || lastName.hasError('maxlength')) {
+									<hlm-field-error [validator]="'minlength'">Last name must be 2-30 characters</hlm-field-error>
+								}
+							}
+						</hlm-field>
+						<hlm-field class="flex flex-col">
+							<label hlmFieldLabel for="email">Email</label>
+							<input hlmInput id="email" type="email" placeholder="Enter your email" formControlName="email" />
+							@if (email && email.touched && email.invalid) {
+								@if (email.hasError('required')) {
+									<hlm-field-error [validator]="'required'">Email is required</hlm-field-error>
+								}
+								@else if (email.hasError('email')) {
+									<hlm-field-error [validator]="'email'">Invalid email address</hlm-field-error>
+								}
+							}
+						</hlm-field>
+						<hlm-field class="flex flex-col">
+							<label hlmFieldLabel for="password">Password</label>
+							<input hlmInput type="password" id="password" placeholder="Enter your password" formControlName="password" />
+							@if (password && password.touched && password.invalid) {
+								@if (password.hasError('required')) {
+									<hlm-field-error [validator]="'required'">Password is required</hlm-field-error>
+								}
+								@else if (password.hasError('minlength')) {
+									<hlm-field-error [validator]="'minlength'">Password must be at least 8 characters</hlm-field-error>
+								}
+								@else if (password.hasError('pattern')) {
+									<hlm-field-error [validator]="'pattern'">Include at least one uppercase letter, one lowercase letter, and one number</hlm-field-error>
+								}
+							}
+						</hlm-field>
+						<hlm-field class="flex flex-col">
+							<label hlmFieldLabel for="confirmPassword">Confirm password</label>
+							<input hlmInput type="password" id="confirmPassword" placeholder="Confirm your password" formControlName="confirmPassword" />
+							@if (confirmPassword && confirmPassword.touched && confirmPassword.hasError('required')) {
+								<hlm-field-error [validator]="'required'">Please confirm your password</hlm-field-error>
+							}
+							@else if (confirmPassword && (confirmPassword.dirty || confirmPassword.touched) && signupForm.hasError('passwordsMismatch')) {
+								<hlm-field-error [forceShow]="signupForm.hasError('passwordsMismatch')">Passwords do not match</hlm-field-error>
+							}
+						</hlm-field>
+						<hlm-field class="flex flex-col">
+							<button hlmBtn type="submit" class="cursor-pointer" [disabled]="signupForm.invalid">
+								Create account
+							</button>
+							<p hlmFieldDescription class="text-center">
+								Already have an account?
+								<a routerLink="/login" class="cursor-pointer">Log in</a>
+							</p>
+						</hlm-field>
+					</hlm-field-group>
+				</form>
+			</div>
+		</hlm-card>
+	</div>
+</div>

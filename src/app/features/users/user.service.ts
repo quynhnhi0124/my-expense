@@ -1,7 +1,7 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { MOCK_USERS } from './data/users';
+import { MOCK_USERS } from './data/users.data';
 import { ApiGetListResponse, SearchParams } from '@shared/interfaces';
 import { User } from '@features/users/user.interface';
 
@@ -21,11 +21,19 @@ export class UserService {
     //   .set('_limit', limit.toString())
     //   .set('q', search);
     // return this._http.get<ApiGetListResponse<User>>("", {params})
+    const normalizedSearch = search.trim().toLocaleLowerCase();
+    const users = normalizedSearch
+      ? MOCK_USERS.filter((user) =>
+          [user.firstName, user.lastName, user.email, `${user.firstName} ${user.lastName}`].some(
+            (value) => value.toLocaleLowerCase().includes(normalizedSearch),
+          ),
+        )
+      : MOCK_USERS;
     const res: ApiGetListResponse<User> = {
-      data: MOCK_USERS,
-      rowCount: MOCK_USERS.length,
+      data: users,
+      rowCount: users.length,
       skip: 0,
-      limit: 10,
+      limit: Number(limit || page),
     };
     return of(res);
   }

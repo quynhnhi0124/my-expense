@@ -1,0 +1,115 @@
+<div class="h-full flex-1 space-y-4 p-8 py-6">
+  <header>
+    <h2 class="text-2xl font-bold tracking-tight">Expenses</h2>
+    <p class="text-muted-foreground">Review and manage expense reports.</p>
+  </header>
+
+  <div class="flex flex-wrap items-center gap-2">
+    <input hlmInput type="search" class="w-full md:max-w-sm" placeholder="Search expenses..."
+      aria-label="Search expenses" [formControl]="searchControl" />
+    <hlm-popover>
+      <button hlmBtn type="button" variant="outline" hlmPopoverTrigger>
+        <ng-icon name="lucideCalendarDays" />
+        {{ selectedDates().length ? selectedDates().length + ' dates selected' : 'Expense date' }}
+      </button>
+      <hlm-popover-content *hlmPopoverPortal class="w-auto p-0">
+        <hlm-calendar-multi [date]="selectedDates()" (dateChange)="onExpenseDatesChange($event)" />
+      </hlm-popover-content>
+    </hlm-popover>
+    <hlm-popover>
+      <button hlmBtn type="button" variant="outline" hlmPopoverTrigger>
+        Status
+        @if (selectedStatuses().length) {
+        <span class="text-muted-foreground">({{ selectedStatuses().length }})</span>
+        }
+      </button>
+      <hlm-popover-content *hlmPopoverPortal class="w-56">
+        <div class="space-y-3">
+          <p class="text-sm font-medium">Filter by status</p>
+          @for (status of statuses; track status) {
+          <div class="flex cursor-pointer items-center gap-2 text-sm">
+            <hlm-checkbox inputId="status" [checked]="selectedStatuses().includes(status)"
+              [aria-label]="'Filter by ' + status" (checkedChange)="toggleStatus(status, $event)" />
+            <label for="status" class="first-letter:uppercase">{{ status }}</label>
+          </div>
+          }
+        </div>
+      </hlm-popover-content>
+    </hlm-popover>
+    @if (selectedDates().length || selectedStatuses().length) {
+    <button hlmBtn type="button" variant="ghost" size="sm" (click)="clearFilters()">
+      Clear filters
+    </button>
+    }
+  </div>
+
+  <div class="w-full overflow-auto rounded-md border">
+    <div hlmTableContainer>
+      <table hlmTable>
+        <thead hlmTHead class="bg-background sticky top-0">
+          @for (headerGroup of table.getHeaderGroups(); track headerGroup.id) {
+          <tr hlmTr>
+            @for (header of headerGroup.headers; track header.id) {
+            <th hlmTh [attr.colSpan]="header.colSpan">
+              @if (!header.isPlaceholder) {
+              @if (header.column.getCanSort()) {
+              <button hlmBtn variant="ghost" size="sm" class="-ml-3 h-8"
+                (click)="header.column.toggleSorting(header.column.getIsSorted() === 'asc')">
+                <ng-container *flexRender="header.column.columnDef.header; props: header.getContext(); let headerText">
+                  {{ headerText }}
+                </ng-container>
+                @if (header.column.getIsSorted() === 'asc') {
+                <ng-icon name="lucideArrowUp" />
+                } @else if (header.column.getIsSorted() === 'desc') {
+                <ng-icon name="lucideArrowDown" />
+                } @else {
+                <ng-icon name="lucideArrowUpDown" />
+                }
+              </button>
+              } @else {
+              <ng-container *flexRender="header.column.columnDef.header; props: header.getContext(); let headerText">
+                {{ headerText }}
+              </ng-container>
+              }
+              }
+            </th>
+            }
+          </tr>
+          }
+        </thead>
+        <tbody hlmTBody>
+          @for (row of table.getRowModel().rows; track row.id) {
+          <tr hlmTr>
+            @for (cell of row.getAllCells(); track cell.id) {
+            <td hlmTd>
+              <ng-container *flexRender="cell.column.columnDef.cell; props: cell.getContext(); let cellValue">
+                {{ cellValue }}
+              </ng-container>
+            </td>
+            }
+          </tr>
+          } @empty {
+          <tr hlmTr>
+            <td hlmTd class="h-24 text-center" [attr.colspan]="columns.length">No expenses found.</td>
+          </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-end gap-4">
+    <span class="text-muted-foreground text-sm">
+      Page {{ table.atoms.pagination.get().pageIndex + 1 }} of {{ table.getPageCount() }}
+    </span>
+    <div class="flex gap-2">
+      <button hlmBtn variant="outline" size="sm" [disabled]="!table.getCanPreviousPage()"
+        (click)="table.previousPage()">
+        Previous
+      </button>
+      <button hlmBtn variant="outline" size="sm" [disabled]="!table.getCanNextPage()" (click)="table.nextPage()">
+        Next
+      </button>
+    </div>
+  </div>
+</div>

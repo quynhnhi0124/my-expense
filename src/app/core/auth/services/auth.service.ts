@@ -1,3 +1,4 @@
+import { HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { LoginRequest, LoginResponse } from '@features/auth/models/auth.model';
 import { MOCK_USERS, User } from '@features/users';
@@ -12,24 +13,34 @@ export class AuthService {
   private readonly currentUser = new BehaviorSubject<User | null>(this.getCurrentUser());
   currentUser$ = this.currentUser.asObservable(); //expose the subject behavior
 
-  login(credentials: LoginRequest): Observable<LoginResponse> {
+  login(credentials: LoginRequest): Observable<HttpResponse<LoginResponse>> {
     const user = MOCK_USERS.find(
-      (u) => u.email === credentials.email && u.passwordHash === credentials.password,
+      (u) => u.email === credentials.email && u.password === credentials.password,
     );
     if (!user) {
       return throwError(() => new Error('Invalid credentials'));
     }
-    const { passwordHash, ...userInfo } = user;
-    return of({
-      accessToken: `access-token-${user.id}`,
-      user: userInfo,
-    });
+    const { password, ...userInfo } = user;
+    return of(new HttpResponse({
+      status: 201,
+      body: {
+        accessToken: `access-token-${user.id}`,
+        user: userInfo,
+      }
+    }));
   }
 
   logout(): Observable<void> {
     return of(void 0).pipe(
       delay(500), // call logOut API
       finalize(() => this.clearSession()), // clear session when request fulfill
+    );
+  }
+
+  signup(): Observable<any> {
+
+    return of(
+
     );
   }
 

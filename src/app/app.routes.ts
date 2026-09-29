@@ -25,6 +25,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/users/pages/user-list/user-list').then((m) => m.UserList),
       },
+      {
+        path: RoutePath.expenses.list,
+        loadComponent: () =>
+          import('./features/expenses/pages/expense-list/expense-list').then((m) => m.ExpenseList),
+      },
     ],
   },
 ];

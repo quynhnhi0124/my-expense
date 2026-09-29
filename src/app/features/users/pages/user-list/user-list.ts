@@ -1,49 +1,45 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { UserService } from '@features/users/user.service';
-import { ActivatedRoute } from '@angular/router';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideArrowDown, lucideArrowUp, lucideArrowUpDown } from '@ng-icons/lucide';
+import { HlmButtonImports } from '@spartan-ng/helm/button';
+import { HlmInputImports } from '@spartan-ng/helm/input';
+import { HlmTableImports } from '@spartan-ng/helm/table';
 import {
   rowSortingFeature,
-  columnVisibilityFeature,
   sortFn_alphanumeric,
   sortFn_text,
   tableFeatures,
-  FlexRender,
   createTableHook,
-  columnFilteringFeature,
   rowPaginationFeature,
-  globalFilteringFeature,
-  rowSelectionFeature,
-  createFilteredRowModel,
+  columnFilteringFeature,
+  createSortedRowModel,
   createPaginatedRowModel,
+  createFilteredRowModel,
   filterFn_includesString,
   filterFn_inNumberRange,
-  flexRenderComponent,
-  Updater,
   injectTable,
-  FlexRenderCell,
+  FlexRender,
+  isFunction,
+  SortingState,
 } from '@tanstack/angular-table';
 import { User } from '@features/users/user.interface';
-import { HlmTableImports } from '@spartan-ng/helm/table';
-import { switchMap } from 'rxjs';
-// import {
-//   TableHeaderSelection,
-//   TableRowSelection,
-// } from '@features/users/components/user-table-selection';
-import { TableFilter } from '@features/users/components/user-table-filter';
+import { UserService } from '@features/users/user.service';
+import { UserActionsButton } from '@features/users/components/user-table-actions/user-table-actions';
+import { debounceTime, distinctUntilChanged, startWith, switchMap, tap } from 'rxjs';
 
 export const features = tableFeatures({
   rowSortingFeature,
   rowPaginationFeature,
-  columnVisibilityFeature,
   columnFilteringFeature,
-  globalFilteringFeature,
-  rowSelectionFeature,
+  sortedRowModel: createSortedRowModel(),
+  paginatedRowModel: createPaginatedRowModel(),
   filteredRowModel: createFilteredRowModel(),
   sortFns: {
     text: sortFn_text,
     alphanumeric: sortFn_alphanumeric,
   },
-  paginatedRowModel: createPaginatedRowModel(),
   filterFns: {
     includesString: filterFn_includesString,
     inNumberRange: filterFn_inNumberRange,
@@ -60,153 +56,74 @@ export const {
   debugTable: true,
 });
 const columnHelper = createAppColumnHelper<User>();
+
 @Component({
-  imports: [HlmTableImports, TableFilter, FlexRenderCell, FlexRender],
+  imports: [ReactiveFormsModule, HlmTableImports, HlmButtonImports, HlmInputImports, NgIcon, FlexRender],
+  providers: [provideIcons({ lucideArrowDown, lucideArrowUp, lucideArrowUpDown })],
   selector: 'app-user-list',
   styleUrl: './user-list.css',
   templateUrl: './user-list.html',
 })
 export class UserList implements OnInit {
   private readonly _userService = inject(UserService);
-  private readonly _route = inject(ActivatedRoute);
+  private readonly _destroyRef = inject(DestroyRef);
+  readonly searchControl = new FormControl('', { nonNullable: true });
   readonly data = signal<User[]>([]);
-  readonly globalFilter = signal<string>('');
+  private readonly sorting = signal<SortingState>([]);
   readonly columns = columnHelper.columns([
-    // columnHelper.display({
-    //   id: 'select',
-    //   header: () => flexRenderComponent(TableHeaderSelection),
-    //   cell: () => flexRenderComponent(TableRowSelection),
-    // }),
-     columnHelper.accessor(
-    (row) => `${row.firstName} ${row.lastName}`,
-    {
-      id: 'fullName',
-      header: 'Full name',
-    },
-  ),
+    columnHelper.accessor('firstName', {
+      header: 'First name',
+      sortFn: 'text',
+    }),
+    columnHelper.accessor('lastName', {
+      header: 'Last name',
+      sortFn: 'text',
+    }),
     columnHelper.accessor('email', {
       header: 'Email',
+      sortFn: 'text',
     }),
     columnHelper.accessor('role', {
       header: 'Role',
+      sortFn: 'text',
     }),
     columnHelper.accessor('isActive', {
       header: 'Status',
+      cell: (info) => (info.getValue() ? 'Active' : 'Inactive'),
+      sortFn: 'alphanumeric',
     }),
     columnHelper.display({
       id: 'actions',
       header: 'Actions',
-      cell: '...',
+      cell: () => UserActionsButton,
+      enableSorting: false,
     }),
   ]);
-  //   {
-  //     accessorKey: 'fullName',
-  //     header: 'Full Name',
-  //     cell: ({ row }) => {
-  //       const {
-  //         original: { firstName, lastName },
-  //       } = row;
-  //       return `<span>${firstName} ${lastName}</span>`;
-  //     },
-  //     sortFn: 'text',
-  //   },
-  //   {
-  //     accessorKey: 'email',
-  //     header: 'Email',
-  //     cell: ({ row }) => {
-  //       const {
-  //         original: { email },
-  //       } = row;
-  //       return `<span>${email}</span>`;
-  //     },
-  //     sortFn: 'text',
-  //   },
-  //   {
-  //     accessorKey: 'role',
-  //     header: 'Role',
-  //     cell: ({ row }) => {
-  //       const {
-  //         original: { role },
-  //       } = row;
-  //       return `<span>${role}</span>`;
-  //     },
-  //     sortFn: 'text',
-  //   },
-  //   {
-  //     accessorKey: 'isActive',
-  //     header: 'Status',
-  //     cell: ({ row }) => {
-  //       const {
-  //         original: { isActive },
-  //       } = row;
-  //       return `<span>${isActive}</span>`;
-  //     },
-  //     sortFn: 'text',
-  //   },
-  //   {
-  //     accessorKey: 'actions',
-  //     header: 'Actions',
-  //     cell: ({ row }) => `<span>...</span>`,
-  //   },
-  // ];
 
-  public getListUser() {
-    this._route.queryParams
-      .pipe(
-        switchMap((params) => {
-          const page = params['page'] || 1;
-          const limit = params['limit'] || 10;
-          const search = params['search'] || '';
-          return this._userService.getUsers({ page, limit, search });
-        }),
-      )
-      .subscribe(({ data, rowCount }) => {
-        this.data.set(data);
-        console.log(this.data());
-      });
-  }
   ngOnInit(): void {
-    this.getListUser();
+    this.searchControl.valueChanges
+      .pipe(
+        startWith(''),
+        debounceTime(300),
+        distinctUntilChanged(),
+        tap(() => this.table.setPageIndex(0)),
+        switchMap((search) => this._userService.getUsers({ search })),
+        takeUntilDestroyed(this._destroyRef),
+      )
+      .subscribe(({ data }) => this.data.set(data));
   }
 
   readonly table = injectTable(() => ({
-    key: 'row-selection',
+    key: 'user-list',
     features,
     columns: this.columns,
     data: this.data(),
     getRowId: (row) => String(row.id),
     debugTable: true,
     state: {
-      globalFilter: this.globalFilter(),
+      sorting: this.sorting(),
     },
-
-    onGlobalFilterChange: (updaterOrValue: Updater<string>) => {
-      this.globalFilter.set(
-        typeof updaterOrValue === 'function' ? updaterOrValue(this.globalFilter()) : updaterOrValue,
-      );
-    },
+    onSortingChange: (updater) =>
+      isFunction(updater) ? this.sorting.update(updater) : this.sorting.set(updater),
   }));
-
-  stringifiedState() {
-    return JSON.stringify(this.table.store.get(), null, 2);
-  }
-
-  onPageInputChange(event: Event): void {
-    const inputElement = event.target as HTMLInputElement;
-    const page = inputElement.value ? Number(inputElement.value) - 1 : 0;
-    this.table.setPageIndex(page);
-  }
-
-  onPageSizeChange(event: any): void {
-    this.table.setPageSize(Number(event.target.value));
-  }
-
-  logSelectedFlatRows(): void {
-    console.info('table.getSelectedRowModel().flatRows', this.table.getSelectedRowModel().flatRows);
-  }
-
-
-  onGlobalFilter(event: Event): void {
-    this.table.setGlobalFilter((event.target as HTMLInputElement).value);
-  }
 }

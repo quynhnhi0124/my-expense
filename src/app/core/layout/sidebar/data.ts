@@ -18,15 +18,9 @@ export const data = {
       ],
     },
     {
-      title: 'Transactions',
-      url: '.',
-      icon: 'lucideBot',
-      items: [
-        {
-          title: 'User List',
-          url: '.',
-        },
-      ],
+      title: 'Expenses',
+      url: '/expenses',
+      icon: 'lucideReceipt',
     },
     {
       title: 'User Management',

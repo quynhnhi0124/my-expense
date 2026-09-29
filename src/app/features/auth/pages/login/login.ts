@@ -61,8 +61,13 @@ export class Login {
       )
       .subscribe({
         next: (res) => {
+          if (!res.body) {
+            toast.error('Failed to login');
+            return;
+          }
+
           toast.success('Successfully logged in');
-          this.authService.setSession(res);
+          this.authService.setSession(res.body);
           this.router.navigate(['/users']);
         },
         error: () => {
