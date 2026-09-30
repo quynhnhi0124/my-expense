@@ -4,7 +4,7 @@ export type ExpenseStatus =
   | 'approved'
   | 'rejected';
 
-export type ExpenseCategory =
+export type ExpenseCategoryType =
   | 'food'
   | 'transportation'
   | 'accommodation'
@@ -24,7 +24,7 @@ export interface Expense {
   amount: number;
   currency: 'USD' | 'VND';
 
-  category: ExpenseCategory;
+  category: ExpenseCategoryType;
   expenseDate: Date;
 
   status: ExpenseStatus;

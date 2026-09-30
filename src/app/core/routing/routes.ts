@@ -10,5 +10,6 @@ export const RoutePath = {
   },
   expenses: {
     list: 'expenses',
+    categories: 'expense-categories',
   }
 }

@@ -1,0 +1,161 @@
+<div class="h-full flex-1 space-y-4 p-8 py-6">
+  <header>
+    <h2 class="text-2xl font-bold tracking-tight">Expense categories</h2>
+    <p class="text-muted-foreground">Manage categories used to classify expenses.</p>
+  </header>
+
+  <div class="flex flex-wrap items-center gap-2">
+    <input
+      hlmInput
+      type="search"
+      class="w-full md:max-w-sm"
+      placeholder="Search categories..."
+      aria-label="Search expense categories"
+      [formControl]="searchControl"
+    />
+    <hlm-popover>
+      <button hlmBtn type="button" variant="outline" hlmPopoverTrigger>
+        Status
+        @if (statusControl.value.length) {
+          <span class="text-muted-foreground">({{ statusControl.value.length }})</span>
+        }
+      </button>
+      <hlm-popover-content class="w-48" *hlmPopoverPortal>
+        <div class="space-y-3">
+          <p class="text-sm font-medium">Filter by status</p>
+          @for (status of statuses; track status.value) {
+            <div class="flex items-center gap-2 text-sm">
+              <hlm-checkbox
+                [inputId]="status.id"
+                [checked]="statusControl.value.includes(status.value)"
+                [aria-label]="'Filter by ' + status.label"
+                (checkedChange)="toggleStatus(status.value, $event)"
+              />
+              <label [for]="status.id" class="cursor-pointer">{{ status.label }}</label>
+            </div>
+          }
+        </div>
+      </hlm-popover-content>
+    </hlm-popover>
+    @if (searchControl.value || statusControl.value.length) {
+      <button hlmBtn type="button" variant="ghost" size="sm" (click)="clearFilters()">
+        Clear filters
+      </button>
+    }
+    <button hlmBtn type="button" class="ml-auto" (click)="createDialogState.set('open')">
+      Create category
+    </button>
+
+    <hlm-dialog [state]="createDialogState()" (stateChanged)="onCreateDialogStateChange($event)">
+      <hlm-dialog-content *hlmDialogPortal class="sm:max-w-xl">
+        <hlm-dialog-header>
+          <h3 hlmDialogTitle>Create expense category</h3>
+          <p hlmDialogDescription>Define a category for organizing expense reports.</p>
+        </hlm-dialog-header>
+
+        <form [formGroup]="createCategoryForm" (ngSubmit)="createCategory()">
+          <div class="grid gap-4 py-2">
+            <div class="grid gap-2">
+              <label for="categoryName" class="text-sm font-medium">Name</label>
+              <input hlmInput id="categoryName" formControlName="name" placeholder="Category name" />
+              @if (createCategoryForm.controls.name.touched && createCategoryForm.controls.name.hasError('required')) {
+                <p class="text-destructive text-sm">Name is required</p>
+              }
+            </div>
+            <div class="grid gap-2">
+              <label for="categoryDescription" class="text-sm font-medium">Description</label>
+              <input hlmInput id="categoryDescription" formControlName="description" placeholder="Optional details" />
+            </div>
+            <div class="flex items-center gap-2">
+              <hlm-checkbox inputId="categoryActive" formControlName="isActive" aria-label="Active category" />
+              <label for="categoryActive" class="text-sm font-medium">Active category</label>
+            </div>
+          </div>
+
+          <hlm-dialog-footer class="mt-4">
+            <button hlmBtn type="button" variant="outline" (click)="createDialogState.set('closed')">
+              Cancel
+            </button>
+            <button hlmBtn type="submit" [disabled]="createCategoryForm.invalid || isSubmitting()">
+              Create category
+            </button>
+          </hlm-dialog-footer>
+        </form>
+      </hlm-dialog-content>
+    </hlm-dialog>
+  </div>
+
+  <div class="w-full overflow-auto rounded-md border">
+    <div hlmTableContainer>
+      <table hlmTable>
+        <thead hlmTHead class="bg-background sticky top-0">
+          @for (headerGroup of table.getHeaderGroups(); track headerGroup.id) {
+            <tr hlmTr>
+              @for (header of headerGroup.headers; track header.id) {
+                <th hlmTh [attr.colSpan]="header.colSpan">
+                  @if (!header.isPlaceholder) {
+                    @if (header.column.getCanSort()) {
+                      <button
+                        hlmBtn
+                        variant="ghost"
+                        size="sm"
+                        class="-ml-3 h-8"
+                        (click)="header.column.toggleSorting(header.column.getIsSorted() === 'asc')"
+                      >
+                        <ng-container *flexRender="header.column.columnDef.header; props: header.getContext(); let headerText">
+                          {{ headerText }}
+                        </ng-container>
+                        @if (header.column.getIsSorted() === 'asc') {
+                          <ng-icon name="lucideArrowUp" />
+                        } @else if (header.column.getIsSorted() === 'desc') {
+                          <ng-icon name="lucideArrowDown" />
+                        } @else {
+                          <ng-icon name="lucideArrowUpDown" />
+                        }
+                      </button>
+                    } @else {
+                      <ng-container *flexRender="header.column.columnDef.header; props: header.getContext(); let headerText">
+                        {{ headerText }}
+                      </ng-container>
+                    }
+                  }
+                </th>
+              }
+            </tr>
+          }
+        </thead>
+        <tbody hlmTBody>
+          @for (row of table.getRowModel().rows; track row.id) {
+            <tr hlmTr>
+              @for (cell of row.getAllCells(); track cell.id) {
+                <td hlmTd>
+                  <ng-container *flexRender="cell.column.columnDef.cell; props: cell.getContext(); let cellValue">
+                    {{ cellValue }}
+                  </ng-container>
+                </td>
+              }
+            </tr>
+          } @empty {
+            <tr hlmTr>
+              <td hlmTd class="h-24 text-center" [attr.colspan]="columns.length">No categories found.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="flex items-center justify-end gap-4">
+    <span class="text-muted-foreground text-sm">
+      Page {{ table.atoms.pagination.get().pageIndex + 1 }} of {{ table.getPageCount() }}
+    </span>
+    <div class="flex gap-2">
+      <button hlmBtn variant="outline" size="sm" [disabled]="!table.getCanPreviousPage()" (click)="table.previousPage()">
+        Previous
+      </button>
+      <button hlmBtn variant="outline" size="sm" [disabled]="!table.getCanNextPage()" (click)="table.nextPage()">
+        Next
+      </button>
+    </div>
+  </div>
+</div>

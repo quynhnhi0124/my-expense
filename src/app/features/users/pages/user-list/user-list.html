@@ -4,7 +4,7 @@
     <p class="text-muted-foreground">Manage user accounts and access.</p>
   </header>
 
-  <div class="flex items-center">
+  <div class="flex flex-wrap items-center gap-2">
     <input
       hlmInput
       type="search"
@@ -13,6 +13,59 @@
       aria-label="Search users by first name, last name, or email"
       [formControl]="searchControl"
     />
+    <hlm-popover>
+      <button hlmBtn type="button" variant="outline" hlmPopoverTrigger>
+        Role
+        @if (roleControl.value.length) {
+          <span class="text-muted-foreground">({{ roleControl.value.length }})</span>
+        }
+      </button>
+      <hlm-popover-content class="w-48" *hlmPopoverPortal>
+        <div class="space-y-3">
+          <p class="text-sm font-medium">Filter by role</p>
+          @for (role of roles; track role.value) {
+            <div class="flex items-center gap-2 text-sm">
+              <hlm-checkbox
+                [inputId]="role.id"
+                [checked]="roleControl.value.includes(role.value)"
+                [aria-label]="'Filter by ' + role.label"
+                (checkedChange)="$event ? selectRole(role.value) : deselectRole(role.value)"
+              />
+              <label [for]="role.id" class="cursor-pointer">{{ role.label }}</label>
+            </div>
+          }
+        </div>
+      </hlm-popover-content>
+    </hlm-popover>
+    <hlm-popover>
+      <button hlmBtn type="button" variant="outline" hlmPopoverTrigger>
+        Status
+        @if (statusControl.value.length) {
+          <span class="text-muted-foreground">({{ statusControl.value.length }})</span>
+        }
+      </button>
+      <hlm-popover-content class="w-48" *hlmPopoverPortal>
+        <div class="space-y-3">
+          <p class="text-sm font-medium">Filter by status</p>
+          @for (status of statuses; track status.value) {
+            <div class="flex items-center gap-2 text-sm">
+              <hlm-checkbox
+                [inputId]="status.id"
+                [checked]="statusControl.value.includes(status.value)"
+                [aria-label]="'Filter by ' + status.label"
+                (checkedChange)="$event ? selectStatus(status.value) : deselectStatus(status.value)"
+              />
+              <label [for]="status.id" class="cursor-pointer">{{ status.label }}</label>
+            </div>
+          }
+        </div>
+      </hlm-popover-content>
+    </hlm-popover>
+    @if (searchControl.value || roleControl.value.length || statusControl.value.length) {
+      <button hlmBtn type="button" variant="ghost" size="sm" (click)="clearFilters()">
+        Clear filters
+      </button>
+    }
   </div>
 
   <div class="w-full overflow-auto rounded-md border">

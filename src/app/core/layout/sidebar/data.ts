@@ -18,9 +18,19 @@ export const data = {
       ],
     },
     {
-      title: 'Expenses',
+      title: 'Expense Management',
       url: '/expenses',
       icon: 'lucideReceipt',
+      items: [
+        {
+          title: 'Expense List',
+          url: '/expenses',
+        },
+        {
+          title: 'Expense Categories',
+          url: '/expense-categories',
+        },
+      ],
     },
     {
       title: 'User Management',

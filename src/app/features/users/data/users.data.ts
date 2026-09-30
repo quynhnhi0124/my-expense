@@ -31,7 +31,7 @@ export const MOCK_USERS: User[] = [
     email: 'inactive.user@x.dummyjson.com',
     password: 'inactivepass',
     role: Role.USER,
-    isActive: true,
+    isActive: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   },

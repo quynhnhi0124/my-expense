@@ -19,7 +19,7 @@
     </hlm-sidebar-header>
 
     <hlm-sidebar-content>
-      <nav-items [items]="data.navMain" />
+      <nav-items [items]="getNavMain(user ?? null)" />
     </hlm-sidebar-content>
     <hlm-sidebar-footer>
       <ul hlmSidebarMenu>

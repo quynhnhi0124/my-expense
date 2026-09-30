@@ -3,6 +3,7 @@ import { RoutePath } from './core/routing/routes';
 import { authGuard } from '@core/auth/guards/auth.guard';
 import { AppLayout } from '@core/layout/app-layout/app-layout';
 import { guestGuard } from '@core/auth/guards/guest.guard';
+import { adminGuard } from '@core/auth/guards/admin.guard';
 
 export const routes: Routes = [
   {
@@ -22,6 +23,7 @@ export const routes: Routes = [
     children: [
       {
         path: RoutePath.users.list,
+        canActivate: [adminGuard],
         loadComponent: () =>
           import('./features/users/pages/user-list/user-list').then((m) => m.UserList),
       },
@@ -29,6 +31,14 @@ export const routes: Routes = [
         path: RoutePath.expenses.list,
         loadComponent: () =>
           import('./features/expenses/pages/expense-list/expense-list').then((m) => m.ExpenseList),
+      },
+      {
+        path: RoutePath.expenses.categories,
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/expenses/pages/expense-category-list/expense-category-list').then(
+            (m) => m.ExpenseCategoryList,
+          ),
       },
     ],
   },

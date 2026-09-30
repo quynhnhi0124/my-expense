@@ -20,6 +20,9 @@ export class AuthService {
     if (!user) {
       return throwError(() => new Error('Invalid credentials'));
     }
+    if (!user.isActive) {
+      return throwError(() => new Error('Your account has been deactivated. Contact an administrator.'));
+    }
     const { password, ...userInfo } = user;
     return of(new HttpResponse({
       status: 201,

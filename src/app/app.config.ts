@@ -5,12 +5,15 @@ import { routes } from './app.routes';
 import { provideClientHydration } from '@angular/platform-browser';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { authInterceptor } from './core/auth/interceptors/auth.interceptor';
+import { httpErrorInterceptor } from './core/auth/interceptors/http-error.interceptor';
+import { provideSpartanHlm } from '@spartan-ng/helm/utils';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     provideClientHydration(),
-    provideHttpClient(withInterceptors([authInterceptor])),
+    provideSpartanHlm(),
+    provideHttpClient(withInterceptors([authInterceptor, httpErrorInterceptor])),
   ],
 };

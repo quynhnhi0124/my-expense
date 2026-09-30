@@ -51,14 +51,12 @@ export class Login {
   }
 
   onSubmit() {
+    if (this.loginForm.invalid || this.isSubmitting()) return;
+
+    this.isSubmitting.set(true);
     this.authService
       .login(this.loginForm.value as LoginRequest)
-      .pipe(
-        // runs when Observable ends
-        finalize(() => {
-          this.isSubmitting.set(true);
-        }),
-      )
+      .pipe(finalize(() => this.isSubmitting.set(false)))
       .subscribe({
         next: (res) => {
           if (!res.body) {
@@ -70,8 +68,8 @@ export class Login {
           this.authService.setSession(res.body);
           this.router.navigate(['/users']);
         },
-        error: () => {
-          toast.error('Failed to login');
+        error: (error: unknown) => {
+          toast.error(error instanceof Error ? error.message : 'Failed to login');
         },
       });
   }

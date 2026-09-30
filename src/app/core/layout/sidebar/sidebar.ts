@@ -9,9 +9,10 @@ import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { AuthService } from '@core/auth/services/auth.service';
 import { Router } from '@angular/router';
 import { RoutePath } from '@core/routing/routes';
-import { AsyncPipe, JsonPipe } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import { Observable } from 'rxjs';
 import { User } from '@features/users';
+import { Role } from '@features/users/user.enum';
 
 @Component({
   imports: [
@@ -37,6 +38,23 @@ export class AppSidebar {
   public currentUser$: Observable<User | null> = this.authService.currentUser$;
 
   data = data;
+
+  getNavMain(user: User | null): typeof data.navMain {
+    const visibleItems = data.navMain.filter(
+      (item) => user?.role === Role.ADMIN || item.title !== 'User Management',
+    );
+
+    return visibleItems.map((item) => {
+      if (item.title !== 'Expense Management' || user?.role === Role.ADMIN || !item.items) {
+        return item;
+      }
+
+      return {
+        ...item,
+        items: item.items.filter((subItem) => subItem.url !== '/expense-categories'),
+      };
+    });
+  }
 
   logout() {
     this.authService.logout().subscribe({
