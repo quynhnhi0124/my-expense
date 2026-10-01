@@ -1,0 +1,145 @@
+<div class="space-y-6 p-6">
+  <header class="space-y-1">
+    <h1 class="text-3xl font-bold tracking-tight">{{ pageTitle }}</h1>
+    <p class="text-muted-foreground">{{ pageDescription }}</p>
+  </header>
+
+  <hlm-card>
+    <hlm-card-header>
+      <h2 hlmCardTitle>{{ isAdmin ? 'System Overview' : 'Overview' }}</h2>
+    </hlm-card-header>
+    <div hlmCardContent class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      @for (stat of overview; track stat.status) {
+        <div class="rounded-lg border bg-card p-4 shadow-sm">
+          <div class="mb-2 flex items-center justify-between gap-3">
+            <span class="text-sm font-medium capitalize text-muted-foreground">{{ stat.label }}</span>
+            <span class="text-xs rounded-full px-2 py-1 font-medium capitalize" [class]="{
+              'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200': stat.status === 'draft',
+              'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200': stat.status === 'pending',
+              'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200': stat.status === 'approved',
+              'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-200': stat.status === 'rejected'
+            }">{{ stat.count }}</span>
+          </div>
+          <p class="text-2xl font-bold">{{ formatCurrency(stat.total) }}</p>
+        </div>
+      }
+    </div>
+  </hlm-card>
+
+  <hlm-card>
+    <hlm-card-header>
+      <h2 hlmCardTitle>Monthly Spending</h2>
+    </hlm-card-header>
+    <div hlmCardContent class="h-[300px]">
+      <tanstack-chart hlmChart [options]="chartOptions" aria-label="Monthly spending chart"></tanstack-chart>
+    </div>
+  </hlm-card>
+
+  @if (!isAdmin) {
+    <hlm-card>
+      <hlm-card-header>
+        <h2 hlmCardTitle>Spending by Category</h2>
+      </hlm-card-header>
+      <div hlmCardContent class="space-y-5">
+        @for (item of categoryProgress; track item.category) {
+          <div class="space-y-2">
+            <div class="flex items-center justify-between text-sm">
+              <span class="font-medium">{{ item.category }}</span>
+              <span class="text-muted-foreground">{{ item.percentage }}%</span>
+            </div>
+            <hlm-progress [value]="item.percentage" max="100">
+              <div hlmProgressIndicator></div>
+            </hlm-progress>
+          </div>
+        }
+      </div>
+    </hlm-card>
+  }
+
+  @if (isAdmin) {
+    <hlm-card>
+      <hlm-card-header class="flex items-center justify-between gap-2">
+        <h2 hlmCardTitle>My Expenses</h2>
+        <button hlmBtn variant="link" [routerLink]="['/expenses']" [queryParams]="{ statuses: ['pending'] }" class="px-0">
+          View All &gt;
+        </button>
+      </hlm-card-header>
+      <div hlmCardContent>
+        <div class="overflow-hidden rounded-md border">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-muted/40">
+              <tr>
+                <th class="px-4 py-3 font-medium">Title</th>
+                <th class="px-4 py-3 font-medium">Category</th>
+                <th class="px-4 py-3 font-medium">Amount</th>
+                <th class="px-4 py-3 font-medium">Date</th>
+                <th class="px-4 py-3 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (expense of pendingExpenses; track expense.id) {
+                <tr class="border-t">
+                  <td class="px-4 py-3">{{ expense.title }}</td>
+                  <td class="px-4 py-3 capitalize">{{ expense.category }}</td>
+                  <td class="px-4 py-3">{{ formatCurrency(expense.amount) }}</td>
+                  <td class="px-4 py-3">{{ formatDate(expense.expenseDate) }}</td>
+                  <td class="px-4 py-3">
+                    <span
+                      hlmBadge
+                      variant="outline"
+                      class="first-letter:uppercase bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                    >
+                      {{ expense.status }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </hlm-card>
+  }
+
+  <hlm-card>
+    <hlm-card-header class="flex items-center justify-between gap-2">
+      <h2 hlmCardTitle>Recent Expenses</h2>
+      <button hlmBtn variant="link" [routerLink]="['/expenses']" class="px-0">
+        View All &gt;
+      </button>
+    </hlm-card-header>
+    <div hlmCardContent>
+      <div class="overflow-hidden rounded-md border">
+        <table class="w-full text-left text-sm">
+          <thead class="bg-muted/40">
+            <tr>
+              <th class="px-4 py-3 font-medium">Title</th>
+              <th class="px-4 py-3 font-medium">Category</th>
+              <th class="px-4 py-3 font-medium">Amount</th>
+              <th class="px-4 py-3 font-medium">Date</th>
+              <th class="px-4 py-3 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (expense of recentExpenses; track expense.id) {
+              <tr class="border-t">
+                <td class="px-4 py-3">{{ expense.title }}</td>
+                <td class="px-4 py-3 capitalize">{{ expense.category }}</td>
+                <td class="px-4 py-3">{{ formatCurrency(expense.amount) }}</td>
+                <td class="px-4 py-3">{{ formatDate(expense.expenseDate) }}</td>
+                <td class="px-4 py-3">
+                  <span
+                    hlmBadge
+                    [class]="statusBadgeClass(expense.status)"
+                  >
+                    {{ expense.status }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </hlm-card>
+</div>

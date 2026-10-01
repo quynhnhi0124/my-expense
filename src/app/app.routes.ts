@@ -22,6 +22,16 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       {
+        path: '',
+        redirectTo: RoutePath.dashboard,
+        pathMatch: 'full',
+      },
+      {
+        path: RoutePath.dashboard,
+        loadComponent: () =>
+          import('./features/dashboard/pages/dashboard/dashboard').then((m) => m.Dashboard),
+      },
+      {
         path: RoutePath.users.list,
         canActivate: [adminGuard],
         loadComponent: () =>
