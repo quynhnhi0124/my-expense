@@ -1,6 +1,6 @@
 import { Component, computed, input } from '@angular/core'
 import { Table, type Column } from '@tanstack/angular-table'
-import { User } from '../user.interface'
+import { User } from '../models/user.interface'
 import { features, injectTableContext } from '../pages/user-list/user-list'
 
 @Component({

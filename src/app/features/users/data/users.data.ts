@@ -1,5 +1,5 @@
-import { Role } from "../user.enum";
-import { User } from "../user.interface";
+import { Role } from "../models/user.enum";
+import { User } from "../models/user.interface";
 
 export const MOCK_USERS: User[] = [
   {

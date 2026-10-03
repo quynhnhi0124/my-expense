@@ -2,10 +2,10 @@ import { Injectable, inject } from '@angular/core';
 import { AuthService } from '@core/auth/services/auth.service';
 import { ApiGetListResponse, SearchParams } from '@shared/interfaces';
 import { Observable, of, throwError } from 'rxjs';
-import { Role } from '../users/user.enum';
-import { Expense, ExpenseCategoryType, ExpenseStatus } from './expense.interface';
-import { MOCK_EXPENSES } from './data/expense.data';
-import { MOCK_USERS } from '../users/data/users.data';
+import { Role } from '../../users/models/user.enum';
+import { Expense, ExpenseCategoryType, ExpenseStatus } from '../models/expense.interface';
+import { MOCK_EXPENSES } from '../data/expense.data';
+import { MOCK_USERS } from '../../users/data/users.data';
 
 export type ExpenseScope = 'mine' | 'all';
 
@@ -39,7 +39,7 @@ export class ExpenseService {
     emailSearch = '',
   }: ExpenseQuery): Observable<ApiGetListResponse<Expense>> {
     const currentUser = this._authService.getCurrentUser();
-    const normalizedSearch = search.trim().toLocaleLowerCase();
+    const normalizedSearch = search.trim().toLowerCase();
     const canViewAll = currentUser?.role === Role.ADMIN && scope === 'all';
     const accessibleExpenses = currentUser
       ? MOCK_EXPENSES.filter((expense) => canViewAll || expense.userId === currentUser.id)
@@ -47,7 +47,7 @@ export class ExpenseService {
     const selectedDateKeys = new Set(expenseDates.map((date) => this.toDateKey(date)));
     const expenses = accessibleExpenses.filter((expense) => {
       const matchesSearch = canViewAll
-        ? this.getUserEmail(expense.userId).includes(emailSearch.trim().toLocaleLowerCase())
+        ? this.getUserEmail(expense.userId).includes(emailSearch.trim().toLowerCase())
         : !normalizedSearch ||
         [
           expense.title,
@@ -55,7 +55,7 @@ export class ExpenseService {
           expense.userName,
           expense.category,
           expense.status,
-        ].some((value) => value.toLocaleLowerCase().includes(normalizedSearch));
+        ].some((value) => value.toLowerCase().includes(normalizedSearch));
       const matchesDate =
         selectedDateKeys.size === 0 || selectedDateKeys.has(this.toDateKey(expense.expenseDate));
       const matchesStatus = statuses.length === 0 || statuses.includes(expense.status);
@@ -113,7 +113,7 @@ export class ExpenseService {
   }
 
   private getUserEmail(userId: number): string {
-    return MOCK_USERS.find((user) => user.id === userId)?.email.toLocaleLowerCase() ?? '';
+    return MOCK_USERS.find((user) => user.id === userId)?.email.toLowerCase() ?? '';
   }
 
   private toDateKey(date: Date): string {

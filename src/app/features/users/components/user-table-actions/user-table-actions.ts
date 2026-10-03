@@ -5,7 +5,7 @@ import { lucideEllipsis } from "@ng-icons/lucide";
 import { HlmButtonImports } from "@spartan-ng/helm/button";
 import { HlmDropdownMenuImports } from "@spartan-ng/helm/dropdown-menu";
 import { HlmDialogImports } from "@spartan-ng/helm/dialog";
-import { User } from '@features/users/user.interface';
+import { User } from '@features/users/models/user.interface';
 
 export type UserStatusAction = 'activate' | 'deactivate';
 

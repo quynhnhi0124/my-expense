@@ -2,7 +2,7 @@ import { HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { LoginRequest, LoginResponse } from '@features/auth/models/auth.model';
 import { MOCK_USERS, User } from '@features/users';
-import { BehaviorSubject, delay, finalize, Observable, of, throwError } from 'rxjs';
+import { delay, finalize, Observable, of, throwError } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
@@ -10,8 +10,6 @@ import { BehaviorSubject, delay, finalize, Observable, of, throwError } from 'rx
 export class AuthService {
   private readonly accessTokenKey = 'access_token';
   private readonly currentUserKey = 'currentUser';
-  private readonly currentUser = new BehaviorSubject<User | null>(this.getCurrentUser());
-  currentUser$ = this.currentUser.asObservable(); //expose the subject behavior
 
   login(credentials: LoginRequest): Observable<HttpResponse<LoginResponse>> {
     const user = MOCK_USERS.find(
@@ -21,16 +19,20 @@ export class AuthService {
       return throwError(() => new Error('Invalid credentials'));
     }
     if (!user.isActive) {
-      return throwError(() => new Error('Your account has been deactivated. Contact an administrator.'));
+      return throwError(
+        () => new Error('Your account has been deactivated. Contact an administrator.'),
+      );
     }
     const { password, ...userInfo } = user;
-    return of(new HttpResponse({
-      status: 201,
-      body: {
-        accessToken: `access-token-${user.id}`,
-        user: userInfo,
-      }
-    }));
+    return of(
+      new HttpResponse({
+        status: 201,
+        body: {
+          accessToken: `access-token-${user.id}`,
+          user: userInfo,
+        },
+      }),
+    );
   }
 
   logout(): Observable<void> {
@@ -41,10 +43,7 @@ export class AuthService {
   }
 
   signup(): Observable<any> {
-
-    return of(
-
-    );
+    return of();
   }
 
   getAccessToken(): string | null | void {
@@ -68,12 +67,10 @@ export class AuthService {
   setSession(response: LoginResponse): void {
     localStorage.setItem(this.accessTokenKey, response.accessToken);
     localStorage.setItem(this.currentUserKey, JSON.stringify(response.user));
-    this.currentUser.next(response.user);
   }
 
   clearSession(): void {
     localStorage.removeItem(this.accessTokenKey);
     localStorage.removeItem(this.currentUserKey);
-    this.currentUser.next(null);
   }
 }

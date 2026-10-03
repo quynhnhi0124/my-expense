@@ -30,8 +30,8 @@ import {
 } from '@tanstack/angular-table';
 import { debounceTime, distinctUntilChanged, map, merge, switchMap, tap } from 'rxjs';
 import { toast } from '@spartan-ng/brain/sonner';
-import { ExpenseCategory } from '../../expense-category.interface';
-import { ExpenseCategoryService } from '../../expense-category.service';
+import { ExpenseCategory } from '@features/expenses/models';
+import { ExpenseCategoryService } from '@features/expenses/services';
 
 const categoryTableFeatures = tableFeatures({
   rowSortingFeature,

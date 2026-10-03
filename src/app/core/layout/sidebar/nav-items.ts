@@ -32,33 +32,6 @@ import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
     <hlm-sidebar-group>
       <ul hlmSidebarMenu>
         @for (item of items(); track $index) {
-          <!-- <hlm-collapsible [expanded]="item.isActive ?? false" class="group/collapsible">
-            <li hlmSidebarMenuItem>
-              <button
-                hlmCollapsibleTrigger
-                hlmSidebarMenuButton
-                class="flex w-full items-center justify-between"
-              >
-                <span>{{ item.title }} 1111111</span>
-                <ng-icon
-                  name="lucideChevronRight"
-                  class="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90"
-                  hlm
-                />
-              </button>
-              <hlm-collapsible-content>
-                <ul hlmSidebarMenuSub>
-                  @for (subItem of item.items; track subItem.title) {
-                    <li hlmSidebarMenuSubItem>
-                      <button hlmSidebarMenuSubButton class="w-full">
-                        <span>{{ subItem.title }}</span>
-                      </button>
-                    </li>
-                  }
-                </ul>
-              </hlm-collapsible-content>
-            </li>
-          </hlm-collapsible> -->
           <hlm-collapsible
             [expanded]="item.isActive ?? isGroupActive(item.items ?? [])"
             class="group/collapsible"

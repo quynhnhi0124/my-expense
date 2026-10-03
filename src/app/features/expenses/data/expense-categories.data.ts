@@ -1,4 +1,4 @@
-import { ExpenseCategory } from '../expense-category.interface';
+import { ExpenseCategory } from '../models/expense-category.interface';
 
 export const MOCK_EXPENSE_CATEGORIES: ExpenseCategory[] = [
   {

@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 import { ApiGetListResponse, SearchParams } from '@shared/interfaces';
 import { Observable, of, throwError } from 'rxjs';
-import { ExpenseCategory } from './expense-category.interface';
-import { MOCK_EXPENSE_CATEGORIES } from './data/expense-categories.data';
+import { ExpenseCategory } from '../models/expense-category.interface';
+import { MOCK_EXPENSE_CATEGORIES } from '../data/expense-categories.data';
 
 @Injectable({ providedIn: 'root' })
 export class ExpenseCategoryService {
@@ -12,12 +12,12 @@ export class ExpenseCategoryService {
     limit = '30',
     statuses = [],
   }: SearchParams & { statuses?: Array<'active' | 'inactive'> }): Observable<ApiGetListResponse<ExpenseCategory>> {
-    const normalizedSearch = search.trim().toLocaleLowerCase();
+    const normalizedSearch = search.trim().toLowerCase();
     const categories = MOCK_EXPENSE_CATEGORIES.filter((category) => {
       const matchesSearch =
         !normalizedSearch ||
         [category.name, category.description ?? ''].some((value) =>
-          value.toLocaleLowerCase().includes(normalizedSearch),
+          value.toLowerCase().includes(normalizedSearch),
         );
 
       const status = category.isActive ? 'active' : 'inactive';

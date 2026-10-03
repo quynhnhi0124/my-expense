@@ -41,12 +41,12 @@ import {
 import { debounceTime, distinctUntilChanged, map, switchMap, tap } from 'rxjs';
 import { toast } from '@spartan-ng/brain/sonner';
 import { AuthService } from '@core/auth/services/auth.service';
-import { Role } from '@features/users/user.enum';
-import { Expense, ExpenseCategoryType, ExpenseStatus } from '../../expense.interface';
-import { CreateExpenseInput, ExpenseScope, ExpenseService } from '../../expense.service';
+import { Role } from '@features/users/models/user.enum';
+import { Expense, ExpenseCategoryType, ExpenseStatus } from '../../models/expense.interface';
+import { CreateExpenseInput, ExpenseScope, ExpenseService } from '../../services/expense.service';
 import { MOCK_USERS } from '@features/users/data/users.data';
-import { ExpenseCategoryService } from '../../expense-category.service';
-import { ExpenseCategory } from '../../expense-category.interface';
+import { ExpenseCategoryService } from '../../services/expense-category.service';
+import { ExpenseCategory } from '../../models/expense-category.interface';
 
 const expenseTableFeatures = tableFeatures({
   rowSortingFeature,
@@ -423,7 +423,7 @@ export class ExpenseList implements OnInit {
       other: 'other',
     };
 
-    return categoryTypes[name.trim().toLocaleLowerCase()] ?? null;
+    return categoryTypes[name.trim().toLowerCase()] ?? null;
   }
 
   private updateFilterQueryParams(): void {

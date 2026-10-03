@@ -1,4 +1,4 @@
-import { Expense } from '../expense.interface';
+import { Expense } from '../models/expense.interface';
 
 export const MOCK_EXPENSES: Expense[] = [
 	{

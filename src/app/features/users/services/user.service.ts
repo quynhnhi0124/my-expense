@@ -1,10 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
-import { MOCK_USERS } from './data/users.data';
+import { MOCK_USERS } from '../data/users.data';
 import { ApiGetListResponse, SearchParams } from '@shared/interfaces';
-import { User } from '@features/users/user.interface';
-import { Role } from './user.enum';
+import { User } from '@features/users/models/user.interface';
+import { Role } from '../models/user.enum';
 
 @Injectable({
   providedIn: 'root',
@@ -24,12 +24,12 @@ export class UserService {
     //   .set('_limit', limit.toString())
     //   .set('q', search);
     // return this._http.get<ApiGetListResponse<User>>("", {params})
-    const normalizedSearch = search.trim().toLocaleLowerCase();
+    const normalizedSearch = search.trim().toLowerCase();
     const users = MOCK_USERS.filter((user) => {
       const matchesSearch =
         !normalizedSearch ||
         [user.firstName, user.lastName, user.email, `${user.firstName} ${user.lastName}`].some(
-          (value) => value.toLocaleLowerCase().includes(normalizedSearch),
+          (value) => value.toLowerCase().includes(normalizedSearch),
         );
 
       const matchesRole = roles.length === 0 || roles.includes(user.role);

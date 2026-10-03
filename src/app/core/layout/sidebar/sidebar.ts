@@ -9,10 +9,8 @@ import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { AuthService } from '@core/auth/services/auth.service';
 import { Router } from '@angular/router';
 import { RoutePath } from '@core/routing/routes';
-import { AsyncPipe } from '@angular/common';
-import { Observable } from 'rxjs';
 import { User } from '@features/users';
-import { Role } from '@features/users/user.enum';
+import { Role } from '@features/users/models/user.enum';
 
 @Component({
   imports: [
@@ -21,7 +19,6 @@ import { Role } from '@features/users/user.enum';
     NavItems,
     HlmAvatarImports,
     HlmDropdownMenuImports,
-    AsyncPipe
   ],
   selector: 'app-sidebar',
   styleUrl: './sidebar.css',
@@ -35,8 +32,7 @@ export class AppSidebar {
   protected readonly _menuSide = computed(() =>
     this._sidebarService.isMobile() ? 'top' : 'right',
   );
-  public currentUser$: Observable<User | null> = this.authService.currentUser$;
-
+  currentUser = this.authService.getCurrentUser();
   data = data;
 
   getNavMain(user: User | null): typeof data.navMain {

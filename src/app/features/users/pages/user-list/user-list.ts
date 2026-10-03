@@ -28,11 +28,11 @@ import {
   isFunction,
   SortingState,
 } from '@tanstack/angular-table';
-import { User } from '@features/users/user.interface';
-import { UserService } from '@features/users/user.service';
+import { User } from '@features/users/models/user.interface';
+import { UserService } from '@features/users/services/user.service';
 import { UserActionsButton, UserStatusAction } from '@features/users/components/user-table-actions/user-table-actions';
 import { debounceTime, distinctUntilChanged, map, switchMap, tap } from 'rxjs';
-import { Role } from '@features/users/user.enum';
+import { Role } from '@features/users/models/user.enum';
 import { HlmBadgeImports } from '@spartan-ng/helm/badge';
 import { toast } from '@spartan-ng/brain/sonner';
 
