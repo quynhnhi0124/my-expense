@@ -1,127 +1,78 @@
 import { DatePipe } from '@angular/common';
-import { Component, DestroyRef, inject, input, OnInit, signal } from '@angular/core';
+import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideArrowDown, lucideArrowUp, lucideArrowUpDown, lucideEllipsis } from '@ng-icons/lucide';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
-import { HlmBadgeImports } from '@spartan-ng/helm/badge';
 import { HlmDialogImports } from '@spartan-ng/helm/dialog';
-import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { HlmCheckboxImports } from '@spartan-ng/helm/checkbox';
 import { HlmInputImports } from '@spartan-ng/helm/input';
-import { HlmPopoverImports } from '@spartan-ng/helm/popover';
-import { HlmTableImports } from '@spartan-ng/helm/table';
 import {
   createPaginatedRowModel,
   createSortedRowModel,
   createTableHook,
   flexRenderComponent,
-  FlexRender,
   injectTable,
   isFunction,
   rowPaginationFeature,
   rowSortingFeature,
-  sortFn_alphanumeric,
+  sortFn_basic,
   sortFn_text,
   SortingState,
   tableFeatures,
 } from '@tanstack/angular-table';
-import { debounceTime, distinctUntilChanged, map, merge, switchMap, tap } from 'rxjs';
+import { debounceTime, distinctUntilChanged, map, switchMap, tap } from 'rxjs';
 import { toast } from '@spartan-ng/brain/sonner';
 import { ExpenseCategory } from '@features/expenses/models';
 import { ExpenseCategoryService } from '@features/expenses/services';
+import { CommonTable } from '@shared/components/table/table-data/common-table.component';
+import { TableDataHeader } from '@shared/components/table/table-data-header/table-data-header.component';
+import {
+  TableDataToolbar,
+} from '@shared/components/table/table-data-toolbar/table-data-toolbar.component';
+import { FilterItem, TableFilterChange, TableFilterGroup } from '@shared/interfaces/data.interface';
+import { StatusBadge, StatusBadgeProps } from '@shared/components/status-badge/status-badge.component';
+import { updateTableFilterQueryParams } from '@shared/utils';
+import { CategoryActionsButton } from '@features/expenses/components/expense-category/category-action-dialog/category-action-dialog.component';
 
-const categoryTableFeatures = tableFeatures({
+export const features = tableFeatures({
   rowSortingFeature,
   rowPaginationFeature,
   sortedRowModel: createSortedRowModel(),
   paginatedRowModel: createPaginatedRowModel(),
   sortFns: {
     text: sortFn_text,
-    alphanumeric: sortFn_alphanumeric,
+    basic: sortFn_basic,
   },
 });
 
-const { createAppColumnHelper } = createTableHook({ features: categoryTableFeatures });
+export const { createAppColumnHelper } = createTableHook({
+  features,
+});
 const columnHelper = createAppColumnHelper<ExpenseCategory>();
-type CategoryStatusHandler = (categoryId: number, isActive: boolean) => void;
+type CategoryStatus = 'active' | 'inactive';
 
-@Component({
-  imports: [HlmBadgeImports],
-  template: `<span hlmBadge [variant]="isActive() ? 'secondary' : 'destructive'">{{ isActive() ? 'Active' : 'Inactive' }}</span>`,
-})
-class CategoryStatusBadge {
-  readonly isActive = input.required<boolean>();
-}
+const categoryStatusBadges: Record<string, StatusBadgeProps> = {
+  active: { label: 'Active' },
+  inactive: { label: 'Inactive', variant: 'outline' },
+};
 
-@Component({
-  imports: [DatePipe, HlmButtonImports, HlmDialogImports, HlmDropdownMenuImports, NgIcon],
-  providers: [provideIcons({ lucideEllipsis })],
-  template: `
-    <hlm-dialog [state]="dialogState()" (stateChanged)="onDialogStateChange($event)">
-      <button hlmBtn type="button" size="icon-sm" variant="ghost" aria-label="Category actions"
-        [hlmDropdownMenuTrigger]="menu" align="start">
-        <ng-icon name="lucideEllipsis" />
-      </button>
-      <ng-template #menu>
-        <hlm-dropdown-menu class="w-40">
-          <button hlmDropdownMenuItem (click)="dialogState.set('open')">Details</button>
-        </hlm-dropdown-menu>
-      </ng-template>
-
-      <hlm-dialog-content *hlmDialogPortal class="sm:max-w-md">
-        <hlm-dialog-header>
-          <h3 hlmDialogTitle>{{ category().name }}</h3>
-          <p hlmDialogDescription>Expense category details</p>
-        </hlm-dialog-header>
-        <dl class="grid gap-3 py-2 text-sm">
-          <div class="flex justify-between gap-4"><dt class="text-muted-foreground">Description</dt><dd>{{ category().description || 'No description' }}</dd></div>
-          <div class="flex justify-between gap-4"><dt class="text-muted-foreground">Status</dt><dd>{{ category().isActive ? 'Active' : 'Inactive' }}</dd></div>
-          <div class="flex justify-between gap-4"><dt class="text-muted-foreground">Created</dt><dd>{{ category().createdAt | date:'mediumDate' }}</dd></div>
-          <div class="flex justify-between gap-4"><dt class="text-muted-foreground">Updated</dt><dd>{{ category().updatedAt | date:'mediumDate' }}</dd></div>
-        </dl>
-        <hlm-dialog-footer>
-          <button hlmBtn type="button" variant="outline" hlmDialogClose>Close</button>
-          @if (category().isActive) {
-            <button hlmBtn type="button" variant="destructive" (click)="setStatus(false)">Deactivate category</button>
-          } @else {
-            <button hlmBtn type="button" variant="secondary" (click)="setStatus(true)">Activate category</button>
-          }
-        </hlm-dialog-footer>
-      </hlm-dialog-content>
-    </hlm-dialog>
-  `,
-})
-class CategoryActionsButton {
-  readonly category = input.required<ExpenseCategory>();
-  readonly updateStatus = input.required<CategoryStatusHandler>();
-  readonly dialogState = signal<'open' | 'closed'>('closed');
-
-  onDialogStateChange(state: string): void {
-    if (state === 'open' || state === 'closed') this.dialogState.set(state);
-  }
-
-  setStatus(isActive: boolean): void {
-    this.updateStatus()(this.category().id, isActive);
-    this.dialogState.set('closed');
-  }
+interface ExpenseCategoryListFilters {
+  search: string;
+  statuses: CategoryStatus[];
 }
 
 @Component({
   imports: [
     ReactiveFormsModule,
-    HlmTableImports,
     HlmButtonImports,
     HlmInputImports,
     HlmCheckboxImports,
-    HlmPopoverImports,
     HlmDialogImports,
-    NgIcon,
-    FlexRender,
+    CommonTable,
+    TableDataHeader,
+    TableDataToolbar,
   ],
-  providers: [provideIcons({ lucideArrowDown, lucideArrowUp, lucideArrowUpDown })],
   selector: 'app-expense-category-list',
   styleUrl: './expense-category-list.css',
   templateUrl: './expense-category-list.html',
@@ -131,11 +82,12 @@ export class ExpenseCategoryList implements OnInit {
   private readonly _destroyRef = inject(DestroyRef);
   private readonly _route = inject(ActivatedRoute);
   private readonly _router = inject(Router);
+
   readonly searchControl = new FormControl('', { nonNullable: true });
-  readonly statusControl = new FormControl<Array<'active' | 'inactive'>>([], { nonNullable: true });
-  readonly statuses = [
-    { id: 'category-active', label: 'Active', value: 'active' as const },
-    { id: 'category-inactive', label: 'Inactive', value: 'inactive' as const },
+  readonly statusControl = new FormControl<CategoryStatus[]>([], { nonNullable: true });
+  readonly statuses: FilterItem<CategoryStatus>[] = [
+    { id: 'status-active', label: 'Active', value: 'active' },
+    { id: 'status-inactive', label: 'Inactive', value: 'inactive' },
   ];
   readonly createDialogState = signal<'open' | 'closed'>('closed');
   readonly isSubmitting = signal(false);
@@ -149,27 +101,46 @@ export class ExpenseCategoryList implements OnInit {
   });
   readonly data = signal<ExpenseCategory[]>([]);
   private readonly sorting = signal<SortingState>([]);
+
+  get filterGroups(): TableFilterGroup[] {
+    return [
+      {
+        key: 'status',
+        label: 'Status',
+        options: this.statuses.map((item) => ({ ...item, value: item.value })),
+        selectedValues: this.statusControl.value,
+      },
+    ];
+  }
+
   readonly columns = columnHelper.columns([
-    columnHelper.accessor('name', { header: 'Name', sortFn: 'text' }),
+    columnHelper.accessor('name', {
+      header: 'Name',
+      sortFn: 'text',
+    }),
     columnHelper.accessor('description', {
       header: 'Description',
       sortFn: 'text',
-      cell: (info) => info.getValue() || 'No description',
+      cell: (info) => info.getValue() || '-',
     }),
     columnHelper.accessor('isActive', {
       header: 'Status',
       cell: (info) =>
-        flexRenderComponent(CategoryStatusBadge, { inputs: { isActive: info.getValue() } }),
-      sortFn: 'alphanumeric',
+        flexRenderComponent(StatusBadge, {
+          inputs: {
+            dataBadge: categoryStatusBadges[info.getValue() ? 'active' : 'inactive'],
+          },
+        }),
+      sortFn: 'basic',
     }),
     columnHelper.accessor('createdAt', {
       header: 'Created',
-      sortFn: 'alphanumeric',
+      sortFn: 'basic',
       cell: (info) => new DatePipe('en-US').transform(info.getValue(), 'mediumDate') ?? '',
     }),
     columnHelper.accessor('updatedAt', {
       header: 'Updated',
-      sortFn: 'alphanumeric',
+      sortFn: 'basic',
       cell: (info) => new DatePipe('en-US').transform(info.getValue(), 'mediumDate') ?? '',
     }),
     columnHelper.display({
@@ -184,7 +155,7 @@ export class ExpenseCategoryList implements OnInit {
   ]);
 
   ngOnInit(): void {
-    merge(this.searchControl.valueChanges, this.statusControl.valueChanges)
+    this.searchControl.valueChanges
       .pipe(
         debounceTime(300),
         distinctUntilChanged(),
@@ -195,43 +166,59 @@ export class ExpenseCategoryList implements OnInit {
 
     this._route.queryParamMap
       .pipe(
-        map((params) => ({
-          search: params.get('search') ?? '',
-          statuses: params
-            .getAll('status')
-            .filter((status): status is 'active' | 'inactive' => status === 'active' || status === 'inactive'),
-        })),
-        tap(({ search, statuses }) => {
-          this.searchControl.setValue(search, { emitEvent: false });
-          this.statusControl.setValue(statuses, { emitEvent: false });
-          this.table.setPageIndex(0);
-        }),
-        switchMap(({ search, statuses }) => this._categoryService.getCategories({ search, statuses })),
+        map((params) => this.parseFilters(params)),
+        tap((filters) => this.syncFilterControls(filters)),
+        switchMap((filters) => this.loadCategories(filters)),
         takeUntilDestroyed(this._destroyRef),
       )
-      .subscribe(({ data }) => this.data.set(data));
+      .subscribe();
   }
 
   readonly table = injectTable(() => ({
     key: 'expense-category-list',
-    features: categoryTableFeatures,
+    features,
     columns: this.columns,
     data: this.data(),
     getRowId: (category) => String(category.id),
-    state: { sorting: this.sorting() },
+    state: {
+      sorting: this.sorting(),
+    },
     onSortingChange: (updater) =>
       isFunction(updater) ? this.sorting.update(updater) : this.sorting.set(updater),
   }));
 
+  private parseFilters(params: ParamMap): ExpenseCategoryListFilters {
+    return {
+      search: params.get('search') ?? '',
+      statuses: params
+        .getAll('status')
+        .filter((status): status is CategoryStatus => status === 'active' || status === 'inactive'),
+    };
+  }
+
+  private syncFilterControls(filters: ExpenseCategoryListFilters): void {
+    this.searchControl.setValue(filters.search, { emitEvent: false });
+    this.statusControl.setValue(filters.statuses, { emitEvent: false });
+    this.table.setPageIndex(0);
+  }
+
+  private filtersFromControls(): ExpenseCategoryListFilters {
+    return {
+      search: this.searchControl.value.trim(),
+      statuses: this.statusControl.value,
+    };
+  }
+
+  private loadCategories(filters: ExpenseCategoryListFilters) {
+    return this._categoryService.getCategories(filters).pipe(
+      tap(({ data }) => this.data.set(data)),
+    );
+  }
+
   private updateSearchQueryParam(): void {
-    void this._router.navigate([], {
-      relativeTo: this._route,
-      queryParams: {
-        search: this.searchControl.value.trim() || null,
-        status: this.statusControl.value,
-      },
-      queryParamsHandling: 'merge',
-      replaceUrl: true,
+    updateTableFilterQueryParams(this._router, this._route, {
+      search: this.searchControl.value.trim() || null,
+      status: this.statusControl.value,
     });
   }
 
@@ -241,15 +228,19 @@ export class ExpenseCategoryList implements OnInit {
     this.updateSearchQueryParam();
   }
 
-  toggleStatus(status: 'active' | 'inactive', checked: boolean): void {
-    if (checked) {
-      if (!this.statusControl.value.includes(status)) {
-        this.statusControl.setValue([...this.statusControl.value, status]);
-      }
+  onFilterChange(change: TableFilterChange): void {
+    if (change.key !== 'status') {
       return;
     }
 
-    this.statusControl.setValue(this.statusControl.value.filter((item) => item !== status));
+    this.statusControl.setValue(
+      this.statuses
+        .filter((item) => change.selectedValues.includes(item.value))
+        .map((item) => item.value),
+      { emitEvent: false },
+    );
+
+    this.updateSearchQueryParam();
   }
 
   onCreateDialogStateChange(state: string): void {
@@ -281,9 +272,9 @@ export class ExpenseCategoryList implements OnInit {
       });
   }
 
-  private readonly updateCategoryStatus: CategoryStatusHandler = (categoryId, isActive) => {
+  private readonly updateCategoryStatus = (categoryId: number, isActive: boolean): void => {
     this._categoryService.updateCategoryStatus(categoryId, isActive).subscribe({
-      next: (updatedCategory) => {
+      next: () => {
         toast.success(isActive ? 'Category activated' : 'Category deactivated');
         this.reloadCategories();
       },
@@ -292,12 +283,8 @@ export class ExpenseCategoryList implements OnInit {
   };
 
   private reloadCategories(): void {
-    this._categoryService
-      .getCategories({
-        search: this.searchControl.value,
-        statuses: this.statusControl.value,
-      })
+    this.loadCategories(this.filtersFromControls())
       .pipe(takeUntilDestroyed(this._destroyRef))
-      .subscribe(({ data }) => this.data.set(data));
+      .subscribe();
   }
 }

@@ -1,5 +1,6 @@
 import { Role } from "./user.enum";
 
+export type UserStatus = 'active' | 'inactive';
 export interface User {
   id:  number,
   email: string,

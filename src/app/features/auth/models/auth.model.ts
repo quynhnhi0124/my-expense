@@ -1,6 +1,13 @@
-import { Role } from '@features/users';
+import { Role } from '@features/users/models/user.enum';
 
 export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface SignupRequest {
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
 }

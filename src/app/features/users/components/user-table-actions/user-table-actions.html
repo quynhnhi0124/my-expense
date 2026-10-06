@@ -1,4 +1,8 @@
-<hlm-dialog #userDetailsDialog="hlmDialog">
+<hlm-dialog
+  #userDetailsDialog="hlmDialog"
+  [state]="dialogState()"
+  (stateChanged)="onDialogStateChange($event)"
+>
   <button
     hlmBtn
     type="button"
@@ -15,7 +19,13 @@
       <hlm-dropdown-menu-group>
         <hlm-dropdown-menu-label>Actions</hlm-dropdown-menu-label>
       </hlm-dropdown-menu-group>
-      <button hlmDropdownMenuItem [hlmDialogTriggerFor]="userDetailsDialog">Details</button>
+      <button
+        hlmDropdownMenuItem
+        [hlmDialogTriggerFor]="userDetailsDialog"
+        (click)="prepareRoleChange()"
+      >
+        Details
+      </button>
     </hlm-dropdown-menu>
   </ng-template>
 
@@ -26,16 +36,40 @@
     </hlm-dialog-header>
     <dl class="grid gap-3 py-2 text-sm">
       <div class="flex justify-between gap-4"><dt class="text-muted-foreground">Email</dt><dd>{{ user().email }}</dd></div>
-      <div class="flex justify-between gap-4"><dt class="text-muted-foreground">Role</dt><dd>{{ user().role }}</dd></div>
+      <div class="flex items-center justify-between gap-4">
+        <dt class="text-muted-foreground">Role</dt>
+        <dd>
+          <hlm-select [formControl]="roleControl">
+            <hlm-select-trigger aria-label="User role" class="w-36">
+              <hlm-select-value placeholder="Select role" />
+            </hlm-select-trigger>
+            <hlm-select-content *hlmSelectPortal>
+              @for (role of roleOptions; track role.value) {
+                <hlm-select-item [value]="role.value">{{ role.label }}</hlm-select-item>
+              }
+            </hlm-select-content>
+          </hlm-select>
+        </dd>
+      </div>
       <div class="flex justify-between gap-4"><dt class="text-muted-foreground">Status</dt><dd>{{ user().isActive ? 'Active' : 'Inactive' }}</dd></div>
       <div class="flex justify-between gap-4"><dt class="text-muted-foreground">Created</dt><dd>{{ user().createdAt | date:'mediumDate' }}</dd></div>
     </dl>
     <hlm-dialog-footer>
-      <button hlmBtn type="button" variant="outline" hlmDialogClose>Close</button>
+      <button hlmBtn type="button" variant="outline" hlmDialogClose [disabled]="isUpdating()">
+        Close
+      </button>
+      <button
+        hlmBtn
+        type="button"
+        [disabled]="roleControl.value === user().role || isUpdating()"
+        (click)="saveRoleChange()"
+      >
+        Save role
+      </button>
       @if (user().isActive) {
-        <button hlmBtn type="button" variant="destructive" (click)="deactivateUser()">Deactivate user</button>
+        <button hlmBtn type="button" variant="destructive" [disabled]="isUpdating()" (click)="deactivateUser()">Deactivate user</button>
       } @else {
-        <button hlmBtn type="button" variant="secondary" (click)="activateUser()">Activate user</button>
+        <button hlmBtn type="button" variant="secondary" [disabled]="isUpdating()" (click)="activateUser()">Activate user</button>
       }
     </hlm-dialog-footer>
   </hlm-dialog-content>

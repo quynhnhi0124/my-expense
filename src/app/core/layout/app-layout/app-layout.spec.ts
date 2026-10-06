@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { AuthService } from '@core/auth/services/auth.service';
 import { AppLayout } from './app-layout';
 
 describe('AppLayout', () => {
@@ -8,6 +10,10 @@ describe('AppLayout', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AppLayout],
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: { getCurrentUser: () => null } },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AppLayout);

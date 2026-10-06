@@ -12,8 +12,8 @@ export type ExpenseScope = 'mine' | 'all';
 export interface ExpenseQuery extends SearchParams {
   expenseDates?: Date[];
   statuses?: ExpenseStatus[];
+  categories?: ExpenseCategoryType[];
   scope?: ExpenseScope;
-  emailSearch?: string;
 }
 
 export interface CreateExpenseInput {
@@ -35,8 +35,8 @@ export class ExpenseService {
     limit = '30',
     expenseDates = [],
     statuses = [],
+    categories = [],
     scope = 'mine',
-    emailSearch = '',
   }: ExpenseQuery): Observable<ApiGetListResponse<Expense>> {
     const currentUser = this._authService.getCurrentUser();
     const normalizedSearch = search.trim().toLowerCase();
@@ -46,21 +46,23 @@ export class ExpenseService {
       : [];
     const selectedDateKeys = new Set(expenseDates.map((date) => this.toDateKey(date)));
     const expenses = accessibleExpenses.filter((expense) => {
-      const matchesSearch = canViewAll
-        ? this.getUserEmail(expense.userId).includes(emailSearch.trim().toLowerCase())
-        : !normalizedSearch ||
-        [
+      const searchableValues = [
           expense.title,
           expense.description ?? '',
           expense.userName,
           expense.category,
           expense.status,
-        ].some((value) => value.toLowerCase().includes(normalizedSearch));
+          ...(canViewAll ? [this.getUserEmail(expense.userId)] : []),
+        ];
+      const matchesSearch =
+        !normalizedSearch ||
+        searchableValues.some((value) => value.toLowerCase().includes(normalizedSearch));
       const matchesDate =
         selectedDateKeys.size === 0 || selectedDateKeys.has(this.toDateKey(expense.expenseDate));
       const matchesStatus = statuses.length === 0 || statuses.includes(expense.status);
+      const matchesCategory = categories.length === 0 || categories.includes(expense.category);
 
-      return matchesSearch && matchesDate && matchesStatus;
+      return matchesSearch && matchesDate && matchesStatus && matchesCategory;
     });
 
     return of({

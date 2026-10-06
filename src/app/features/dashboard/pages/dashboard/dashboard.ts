@@ -1,6 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { HlmBadgeImports } from '@spartan-ng/helm/badge';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmChartImports } from '@spartan-ng/helm/chart';
@@ -9,12 +8,21 @@ import { AuthService } from '@core/auth/services/auth.service';
 import { MOCK_EXPENSE_CATEGORIES } from '@features/expenses/data/expense-categories.data';
 import { MOCK_EXPENSES } from '@features/expenses/data/expense.data';
 import { Expense, ExpenseStatus } from '@features/expenses/models/expense.interface';
+import { createExpenseColumns, expenseTableFeatures } from '@features/expenses/expense-table';
 import { MOCK_USERS } from '@features/users/data/users.data';
 import { Role } from '@features/users/models/user.enum';
+import {
+  flexRenderComponent,
+  injectTable,
+  isFunction,
+  SortingState,
+} from '@tanstack/angular-table';
 import { type ChartTooltipContent, barY, defineChart } from '@tanstack/charts';
 import { tooltip } from '@tanstack/charts/tooltip';
 import { scaleBand } from '@tanstack/charts/scales/band';
 import { scaleLinear } from '@tanstack/charts/scales/linear';
+import { CommonTable } from '@shared/components/table/table-data/common-table.component';
+import { TableDataHeader } from '@shared/components/table/table-data-header/table-data-header.component';
 
 interface OverviewStat {
   status: ExpenseStatus;
@@ -30,7 +38,15 @@ interface CategoryProgress {
 }
 
 @Component({
-  imports: [RouterLink, HlmCardImports, HlmButtonImports, HlmBadgeImports, HlmChartImports, HlmProgressImports],
+  imports: [
+    RouterLink,
+    HlmCardImports,
+    HlmButtonImports,
+    HlmChartImports,
+    HlmProgressImports,
+    CommonTable,
+    TableDataHeader
+  ],
   selector: 'app-dashboard',
   styleUrl: './dashboard.css',
   templateUrl: './dashboard.html',
@@ -50,6 +66,41 @@ export class Dashboard {
   );
 
   private readonly statuses: ExpenseStatus[] = ['draft', 'pending', 'approved', 'rejected'];
+  private readonly myExpensesSorting = signal<SortingState>([]);
+  private readonly recentExpensesSorting = signal<SortingState>([]);
+  private readonly expenseColumns = createExpenseColumns({
+    titleHeader: 'Title',
+    dateHeader: 'Date',
+    formatCategory: (category) => this.formatCategoryLabel(category),
+    formatAmount: (expense) => this.formatCurrency(expense.amount),
+    formatDate: (date) => this.formatDate(date),
+  });
+
+  readonly myExpensesTable = injectTable(() => ({
+    key: 'dashboard-my-expenses',
+    features: expenseTableFeatures,
+    columns: this.expenseColumns,
+    data: this.pendingExpenses,
+    getRowId: (expense) => String(expense.id),
+    state: { sorting: this.myExpensesSorting() },
+    onSortingChange: (updater) =>
+      isFunction(updater)
+        ? this.myExpensesSorting.update(updater)
+        : this.myExpensesSorting.set(updater),
+  }));
+
+  readonly recentExpensesTable = injectTable(() => ({
+    key: 'dashboard-recent-expenses',
+    features: expenseTableFeatures,
+    columns: this.expenseColumns,
+    data: this.recentExpenses,
+    getRowId: (expense) => String(expense.id),
+    state: { sorting: this.recentExpensesSorting() },
+    onSortingChange: (updater) =>
+      isFunction(updater)
+        ? this.recentExpensesSorting.update(updater)
+        : this.recentExpensesSorting.set(updater),
+  }));
 
   get overview(): OverviewStat[] {
     const expenses = this.isAdmin
@@ -73,7 +124,20 @@ export class Dashboard {
     );
 
     const monthMap = new Map<string, number>();
-    const monthOrder = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthOrder = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
 
     for (const expense of relevantExpenses) {
       const month = monthOrder[new Date(expense.expenseDate).getMonth()];
@@ -91,7 +155,9 @@ export class Dashboard {
       return [];
     }
 
-    const relevantExpenses = MOCK_EXPENSES.filter((expense) => expense.userId === this.currentUser?.id);
+    const relevantExpenses = MOCK_EXPENSES.filter(
+      (expense) => expense.userId === this.currentUser?.id,
+    );
     const categoryMap = new Map(
       MOCK_EXPENSE_CATEGORIES.filter((category) => category.isActive).map((category) => [
         category.name.toLowerCase(),
@@ -102,7 +168,9 @@ export class Dashboard {
     const totalAmount = relevantExpenses.reduce((sum, expense) => sum + expense.amount, 0);
 
     for (const expense of relevantExpenses) {
-      const categoryName = categoryMap.get(expense.category.toLowerCase()) ?? this.formatCategoryLabel(expense.category);
+      const categoryName =
+        categoryMap.get(expense.category.toLowerCase()) ??
+        this.formatCategoryLabel(expense.category);
       totals.set(categoryName, (totals.get(categoryName) ?? 0) + expense.amount);
     }
 
@@ -123,9 +191,9 @@ export class Dashboard {
       ? MOCK_EXPENSES.filter((expense) => this.activeUserIds.has(expense.userId))
       : MOCK_EXPENSES.filter((expense) => expense.userId === this.currentUser?.id);
 
-    return [...expenses].sort(
-      (a, b) => new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime(),
-    ).slice(0, 5);
+    return [...expenses]
+      .sort((a, b) => new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime())
+      .slice(0, 5);
   }
 
   get pendingExpenses(): Expense[] {
@@ -202,17 +270,6 @@ export class Dashboard {
       day: 'numeric',
       year: 'numeric',
     });
-  }
-
-  statusBadgeClass(status: ExpenseStatus): string {
-    const classes: Record<ExpenseStatus, string> = {
-      draft: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-      pending: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-      approved: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300',
-      rejected: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300',
-    };
-
-    return `${classes[status]} first-letter:uppercase`;
   }
 
   private formatStatusLabel(status: ExpenseStatus): string {

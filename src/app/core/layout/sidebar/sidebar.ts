@@ -9,7 +9,7 @@ import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { AuthService } from '@core/auth/services/auth.service';
 import { Router } from '@angular/router';
 import { RoutePath } from '@core/routing/routes';
-import { User } from '@features/users';
+import { User } from '@features/users/models/user.interface';
 import { Role } from '@features/users/models/user.enum';
 
 @Component({

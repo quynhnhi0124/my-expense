@@ -57,4 +57,15 @@ export class UserService {
     user.updatedAt = new Date();
     return of(user);
   }
+
+  updateUserRole(id: number, role: Role): Observable<User> {
+    const user = MOCK_USERS.find((item) => item.id === id);
+    if (!user) {
+      return throwError(() => new Error('User was not found.'));
+    }
+
+    user.role = role;
+    user.updatedAt = new Date();
+    return of(user);
+  }
 }

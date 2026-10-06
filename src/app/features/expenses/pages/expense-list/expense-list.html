@@ -1,141 +1,12 @@
 <div class="h-full flex-1 space-y-4 p-8 py-6">
-  <header>
-    <h2 class="text-2xl font-bold tracking-tight">Expenses</h2>
-    <p class="text-muted-foreground">Review and manage expense reports.</p>
-  </header>
-
+  <table-data-header class="block" title="Expenses" description="Review and manage expense reports." />
   <ng-template #personalFilters>
     <div class="flex flex-wrap items-center gap-2">
-      <input hlmInput type="search" class="w-full md:max-w-sm" placeholder="Search expenses..."
-        aria-label="Search personal expenses" [formControl]="searchControl" />
-      <hlm-popover>
-        <button hlmBtn type="button" variant="outline" hlmPopoverTrigger>
-          <ng-icon name="lucideCalendarDays" />
-          {{ selectedDates().length ? selectedDates().length + ' dates selected' : 'Expense date' }}
-        </button>
-        <hlm-popover-content *hlmPopoverPortal class="w-auto p-0">
-          <hlm-calendar-multi [date]="selectedDates()" (dateChange)="onExpenseDatesChange($event)" />
-        </hlm-popover-content>
-      </hlm-popover>
-      <hlm-popover>
-        <button hlmBtn type="button" variant="outline" hlmPopoverTrigger>
-          Status
-          @if (selectedStatuses().length) {
-          <span class="text-muted-foreground">({{ selectedStatuses().length }})</span>
-          }
-        </button>
-        <hlm-popover-content *hlmPopoverPortal class="w-56">
-          <div class="space-y-3">
-            <p class="text-sm font-medium">Filter by status</p>
-            @for (status of statuses; track status) {
-            <div class="flex cursor-pointer items-center gap-2 text-sm">
-              <hlm-checkbox [checked]="selectedStatuses().includes(status)" [aria-label]="'Filter by ' + status"
-                (checkedChange)="toggleStatus(status, $event)" />
-              <span class="first-letter:uppercase">{{ status }}</span>
-            </div>
-            }
-          </div>
-        </hlm-popover-content>
-      </hlm-popover>
-      @if (searchControl.value || selectedDates().length || selectedStatuses().length) {
-      <button hlmBtn type="button" variant="ghost" size="sm" (click)="clearFilters()">
-        Clear filters
-      </button>
-      }
-      <button hlmBtn type="button" class="ml-auto" (click)="createDialogState.set('open')">
-        Create expense
-      </button>
-
-      <hlm-dialog [state]="createDialogState()" (stateChanged)="onCreateDialogStateChange($event)">
-        <hlm-dialog-content *hlmDialogPortal class="sm:max-w-xl">
-          <hlm-dialog-header>
-            <h3 hlmDialogTitle>Create expense</h3>
-            <p hlmDialogDescription>Enter the expense details and submit for review.</p>
-          </hlm-dialog-header>
-
-          <form [formGroup]="createExpenseForm" (ngSubmit)="createExpense()">
-            <div class="grid gap-4 py-2">
-              <div class="grid gap-2">
-                <label for="expenseTitle" class="text-sm font-medium">Title</label>
-                <input hlmInput id="expenseTitle" formControlName="title" placeholder="Expense title" />
-                @if (createExpenseForm.controls.title.touched && createExpenseForm.controls.title.hasError('required'))
-                {
-                <p class="text-destructive text-sm">Title is required</p>
-                }
-              </div>
-
-              <div class="grid gap-2">
-                <label for="expenseDescription" class="text-sm font-medium">Description</label>
-                <input hlmInput id="expenseDescription" formControlName="description" placeholder="Optional details" />
-              </div>
-
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div class="grid gap-2">
-                  <label for="expenseAmount" class="text-sm font-medium">Amount</label>
-                  <input hlmInput id="expenseAmount" type="number" min="0.01" step="0.01" formControlName="amount"
-                    placeholder="0.00" />
-                  @if (createExpenseForm.controls.amount.touched && createExpenseForm.controls.amount.invalid) {
-                  <p class="text-destructive text-sm">Enter an amount greater than zero</p>
-                  }
-                </div>
-                <div class="grid gap-2">
-                  <label for="expenseCurrency" class="text-sm font-medium">Currency</label>
-                  <hlm-select id="expenseCurrency" formControlName="currency">
-                    <hlm-select-trigger aria-label="Currency">
-                      <hlm-select-value placeholder="Select currency" />
-                    </hlm-select-trigger>
-                    <hlm-select-content *hlmSelectPortal>
-                      <hlm-select-item value="USD">USD</hlm-select-item>
-                      <hlm-select-item value="VND">VND</hlm-select-item>
-                    </hlm-select-content>
-                  </hlm-select>
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div class="grid gap-2">
-                  <label for="expenseDate" class="text-sm font-medium">Expense date</label>
-                  <hlm-date-picker id="expenseDate" formControlName="expenseDate">
-                    <hlm-date-picker-trigger buttonId="expenseDate" class="w-full">
-                      Select expense date
-                    </hlm-date-picker-trigger>
-                  </hlm-date-picker>
-                  @if (createExpenseForm.controls.expenseDate.touched &&
-                  createExpenseForm.controls.expenseDate.hasError('required')) {
-                  <p class="text-destructive text-sm">Expense date is required</p>
-                  }
-                </div>
-                <div class="grid gap-2">
-                  <label for="expenseCategory" class="text-sm font-medium">Category</label>
-                  <hlm-select id="expenseCategory" formControlName="category">
-                    <hlm-select-trigger aria-label="Expense category">
-                      <hlm-select-value placeholder="Select category" />
-                    </hlm-select-trigger>
-                    <hlm-select-content *hlmSelectPortal>
-                      @for (category of categoryOptions(); track category.value) {
-                      <hlm-select-item [value]="category.value">{{ category.label }}</hlm-select-item>
-                      }
-                    </hlm-select-content>
-                  </hlm-select>
-                  @if (createExpenseForm.controls.category.touched &&
-                  createExpenseForm.controls.category.hasError('required')) {
-                  <p class="text-destructive text-sm">Category is required</p>
-                  }
-                </div>
-              </div>
-            </div>
-
-            <hlm-dialog-footer class="mt-4">
-              <button hlmBtn type="button" variant="outline" (click)="createDialogState.set('closed')">
-                Cancel
-              </button>
-              <button hlmBtn type="submit" [disabled]="createExpenseForm.invalid || isSubmitting()">
-                Create expense
-              </button>
-            </hlm-dialog-footer>
-          </form>
-        </hlm-dialog-content>
-      </hlm-dialog>
+      <table-data-toolbar class="w-full" [searchControl]="searchControl" [searchPlaceholder]="'Search expenses...'"
+        [filterGroups]="personalFilterGroups" (filterChange)="onFilterChange($event)" (clear)="clearFilters()"><button hlmBtn
+          type="button" class="ml-auto" (click)="createDialogState.set('open')">
+          Create expense
+        </button></table-data-toolbar>
     </div>
   </ng-template>
 
@@ -150,13 +21,9 @@
     </div>
     <div hlmTabsContent="all">
       <div class="flex flex-wrap items-center gap-2">
-        <input hlmInput type="search" class="w-full md:max-w-sm" placeholder="Search by user email..."
-          aria-label="Search expenses by user email" [formControl]="emailSearchControl" />
-        @if (emailSearchControl.value) {
-        <button hlmBtn type="button" variant="ghost" size="sm" (click)="clearEmailSearch()">
-          Clear search
-        </button>
-        }
+        <table-data-toolbar class="w-full" [searchControl]="searchControl"
+          [searchPlaceholder]="'Search expenses...'" [filterGroups]="allUserFilterGroups"
+          (filterChange)="onFilterChange($event)" (clear)="clearFilters()" />
       </div>
     </div>
   </hlm-tabs>
@@ -164,73 +31,14 @@
   <ng-container *ngTemplateOutlet="personalFilters" />
   }
 
-  <div class="w-full overflow-auto rounded-md border">
-    <div hlmTableContainer>
-      <table hlmTable>
-        <thead hlmTHead class="bg-background sticky top-0">
-          @for (headerGroup of table.getHeaderGroups(); track headerGroup.id) {
-          <tr hlmTr>
-            @for (header of headerGroup.headers; track header.id) {
-            <th hlmTh [attr.colSpan]="header.colSpan">
-              @if (!header.isPlaceholder) {
-              @if (header.column.getCanSort()) {
-              <button hlmBtn variant="ghost" size="sm" class="-ml-3 h-8"
-                (click)="header.column.toggleSorting(header.column.getIsSorted() === 'asc')">
-                <ng-container *flexRender="header.column.columnDef.header; props: header.getContext(); let headerText">
-                  {{ headerText }}
-                </ng-container>
-                @if (header.column.getIsSorted() === 'asc') {
-                <ng-icon name="lucideArrowUp" />
-                } @else if (header.column.getIsSorted() === 'desc') {
-                <ng-icon name="lucideArrowDown" />
-                } @else {
-                <ng-icon name="lucideArrowUpDown" />
-                }
-              </button>
-              } @else {
-              <ng-container *flexRender="header.column.columnDef.header; props: header.getContext(); let headerText">
-                {{ headerText }}
-              </ng-container>
-              }
-              }
-            </th>
-            }
-          </tr>
-          }
-        </thead>
-        <tbody hlmTBody>
-          @for (row of table.getRowModel().rows; track row.id) {
-          <tr hlmTr>
-            @for (cell of row.getAllCells(); track cell.id) {
-            <td hlmTd>
-              <ng-container *flexRender="cell.column.columnDef.cell; props: cell.getContext(); let cellValue">
-                {{ cellValue }}
-              </ng-container>
-            </td>
-            }
-          </tr>
-          } @empty {
-          <tr hlmTr>
-            <td hlmTd class="h-24 text-center" [attr.colspan]="columns().length">No expenses found.</td>
-          </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  </div>
+  <create-expense-dialog
+    [createDialogState]="createDialogState()"
+    [createExpenseForm]="createExpenseForm"
+    [categoryOptions]="categoryOptions()"
+    [isSubmitting]="isSubmitting()"
+    (createDialogStateChange)="onCreateDialogStateChange($event)"
+    (createExpense)="createExpense()"
+  />
 
-  <div class="flex items-center justify-end gap-4">
-    <span class="text-muted-foreground text-sm">
-      Page {{ table.atoms.pagination.get().pageIndex + 1 }} of {{ table.getPageCount() }}
-    </span>
-    <div class="flex gap-2">
-      <button hlmBtn variant="outline" size="sm" [disabled]="!table.getCanPreviousPage()"
-        (click)="table.previousPage()">
-        Previous
-      </button>
-      <button hlmBtn variant="outline" size="sm" [disabled]="!table.getCanNextPage()" (click)="table.nextPage()">
-        Next
-      </button>
-    </div>
-  </div>
+  <app-common-table [table]="table" emptyMessage="No expenses found." />
 </div>

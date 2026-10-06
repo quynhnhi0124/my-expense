@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { AuthService } from '@core/auth/services/auth.service';
 import { AppSidebar } from './sidebar';
 
 describe('AppSidebar', () => {
@@ -8,6 +10,10 @@ describe('AppSidebar', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AppSidebar],
+      providers: [
+        provideRouter([]),
+        { provide: AuthService, useValue: { getCurrentUser: () => null } },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AppSidebar);

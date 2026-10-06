@@ -6,7 +6,7 @@
 				<p hlmCardDescription>Enter your information below to create your account</p>
 			</hlm-card-header>
 			<div hlmCardContent>
-				<form [formGroup]="signupForm" (submit)="onSubmit()">
+				<form [formGroup]="signupForm" (ngSubmit)="onSubmit()">
 					<hlm-field-group>
 						<hlm-field class="flex flex-col">
 							<label hlmFieldLabel for="firstName">First name</label>
@@ -76,8 +76,8 @@
 							}
 						</hlm-field>
 						<hlm-field class="flex flex-col">
-							<button hlmBtn type="submit" class="cursor-pointer" [disabled]="signupForm.invalid">
-								Create account
+							<button hlmBtn type="submit" class="cursor-pointer" [disabled]="signupForm.invalid || isSubmitting()">
+								{{ isSubmitting() ? 'Creating account...' : 'Create account' }}
 							</button>
 							<p hlmFieldDescription class="text-center">
 								Already have an account?
