@@ -17,7 +17,7 @@ describe('ExpenseList', () => {
           provide: AuthService,
           useValue: {
             getCurrentUser: () => ({
-              id: 1,
+              id: '1',
               firstName: 'Admin',
               lastName: 'User',
               email: 'admin@example.test',

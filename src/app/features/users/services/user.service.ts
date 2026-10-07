@@ -47,7 +47,7 @@ export class UserService {
     return of(res);
   }
 
-  updateUserStatus(id: number, isActive: boolean): Observable<User> {
+  updateUserStatus(id: string, isActive: boolean): Observable<User> {
     const user = MOCK_USERS.find((item) => item.id === id);
     if (!user) {
       return throwError(() => new Error('User was not found.'));
@@ -58,7 +58,7 @@ export class UserService {
     return of(user);
   }
 
-  updateUserRole(id: number, role: Role): Observable<User> {
+  updateUserRole(id: string, role: Role): Observable<User> {
     const user = MOCK_USERS.find((item) => item.id === id);
     if (!user) {
       return throwError(() => new Error('User was not found.'));

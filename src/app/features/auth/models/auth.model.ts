@@ -15,7 +15,7 @@ export interface SignupRequest {
 export interface LoginResponse {
   accessToken: string;
   user: {
-    id: number;
+    id: string;
     email: string;
     firstName: string;
     lastName: string;

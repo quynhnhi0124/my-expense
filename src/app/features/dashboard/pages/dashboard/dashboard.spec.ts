@@ -21,7 +21,7 @@ describe('Dashboard', () => {
 
   it('renders the user dashboard and limits recent expenses to five newest rows', () => {
     currentUser = {
-        id: 2,
+        id: '2',
         firstName: 'Emma',
         lastName: 'User',
         email: 'user.emma@x.dummyjson.com',
@@ -50,7 +50,7 @@ describe('Dashboard', () => {
 
   it('renders the admin dashboard overview', () => {
     currentUser = {
-        id: 1,
+        id: '1',
         firstName: 'Emily',
         lastName: 'Johnson',
         email: 'emily.johnson@x.dummyjson.com',

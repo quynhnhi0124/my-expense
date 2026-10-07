@@ -114,7 +114,7 @@ export class ExpenseService {
     return of(expense);
   }
 
-  private getUserEmail(userId: number): string {
+  private getUserEmail(userId: string): string {
     return MOCK_USERS.find((user) => user.id === userId)?.email.toLowerCase() ?? '';
   }
 

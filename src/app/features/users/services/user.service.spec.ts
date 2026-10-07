@@ -20,12 +20,12 @@ describe('UserService', () => {
       service.getUsers({ search: 'emma', roles: [Role.USER], statuses: ['active'] }),
     );
 
-    expect(result.data.map((user) => user.id)).toEqual([2]);
+    expect(result.data.map((user) => user.id)).toEqual(['2']);
     expect(result.rowCount).toBe(1);
   });
 
   it('updates a user role and modified timestamp', async () => {
-    const user = MOCK_USERS.find((item) => item.id === 2)!;
+    const user = MOCK_USERS.find((item) => item.id === '2')!;
     const updated = await firstValueFrom(service.updateUserRole(user.id, Role.ADMIN));
 
     expect(updated.role).toBe(Role.ADMIN);
@@ -33,10 +33,10 @@ describe('UserService', () => {
   });
 
   it('updates status and rejects unknown user ids', async () => {
-    const updated = await firstValueFrom(service.updateUserStatus(2, false));
+    const updated = await firstValueFrom(service.updateUserStatus('2', false));
 
     expect(updated.isActive).toBe(false);
-    await expect(firstValueFrom(service.updateUserStatus(-1, true))).rejects.toThrow(
+    await expect(firstValueFrom(service.updateUserStatus('-1', true))).rejects.toThrow(
       'User was not found.',
     );
   });

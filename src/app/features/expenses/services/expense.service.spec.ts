@@ -48,7 +48,7 @@ describe('ExpenseService', () => {
   });
 
   it('allows admins to list all users expenses', async () => {
-    currentUser = { id: 1, firstName: 'Emily', lastName: 'Johnson', role: Role.ADMIN };
+    currentUser = { id: '1', firstName: 'Emily', lastName: 'Johnson', role: Role.ADMIN };
 
     const result = await firstValueFrom(service.getExpenses({ scope: 'all' }));
 
@@ -79,7 +79,7 @@ describe('ExpenseService', () => {
       firstValueFrom(service.updateExpenseStatus(2, 'approved')),
     ).rejects.toThrow('Only administrators can update expense status.');
 
-    currentUser = { id: 1, firstName: 'Emily', lastName: 'Johnson', role: Role.ADMIN };
+    currentUser = { id: '1', firstName: 'Emily', lastName: 'Johnson', role: Role.ADMIN };
     const updated: Expense = await firstValueFrom(service.updateExpenseStatus(2, 'approved'));
 
     expect(updated.status).toBe('approved');

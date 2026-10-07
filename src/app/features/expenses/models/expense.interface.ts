@@ -14,23 +14,15 @@ export type ExpenseCategoryType =
 
 export interface Expense {
   id: number;
-
-  userId: number;
+  userId: string;
   userName: string;
-
   title: string;
   description?: string;
-
   amount: number;
   currency: 'USD' | 'VND';
-
   category: ExpenseCategoryType;
   expenseDate: Date;
-
   status: ExpenseStatus;
-
-  rejectionReason?: string;
-
   createdAt: Date;
   updatedAt: Date;
 }

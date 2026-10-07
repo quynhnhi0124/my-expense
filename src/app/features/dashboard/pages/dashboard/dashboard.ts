@@ -12,7 +12,6 @@ import { createExpenseColumns, expenseTableFeatures } from '@features/expenses/e
 import { MOCK_USERS } from '@features/users/data/users.data';
 import { Role } from '@features/users/models/user.enum';
 import {
-  flexRenderComponent,
   injectTable,
   isFunction,
   SortingState,

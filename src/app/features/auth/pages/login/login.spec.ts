@@ -40,7 +40,7 @@ describe('Login', () => {
     const response: LoginResponse = {
       accessToken: 'test-token',
       user: {
-        id: 2,
+        id: '2',
         email: 'user@example.test',
         firstName: 'Test',
         lastName: 'User',

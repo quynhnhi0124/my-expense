@@ -1,12 +1,12 @@
-import { Component, DestroyRef, inject, input, signal } from "@angular/core";
+import { Component, DestroyRef, inject, input, signal } from '@angular/core';
 import { DatePipe } from '@angular/common';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { NgIcon, provideIcons } from "@ng-icons/core";
-import { lucideEllipsis } from "@ng-icons/lucide";
-import { HlmButtonImports } from "@spartan-ng/helm/button";
-import { HlmDropdownMenuImports } from "@spartan-ng/helm/dropdown-menu";
-import { HlmDialogImports } from "@spartan-ng/helm/dialog";
+import { NgIcon, provideIcons } from '@ng-icons/core';
+import { lucideEllipsis } from '@ng-icons/lucide';
+import { HlmButtonImports } from '@spartan-ng/helm/button';
+import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
+import { HlmDialogImports } from '@spartan-ng/helm/dialog';
 import { HlmSelectImports } from '@spartan-ng/helm/select';
 import { User } from '@features/users/models/user.interface';
 import { Role } from '@features/users/models/user.enum';
@@ -14,10 +14,10 @@ import { Observable, finalize } from 'rxjs';
 
 export type UserStatusAction = 'activate' | 'deactivate';
 export type UserStatusActionHandler = (
-  userId: number,
+  userId: string,
   action: UserStatusAction,
 ) => Observable<User>;
-export type UserRoleAction = (userId: number, role: Role) => Observable<User>;
+export type UserRoleAction = (userId: string, role: Role) => Observable<User>;
 
 @Component({
   imports: [

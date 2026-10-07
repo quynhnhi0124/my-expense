@@ -1,10 +1,11 @@
-import { HttpResponse } from '@angular/common/http';
-import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { inject, Injectable } from '@angular/core';
 import { LoginRequest, LoginResponse, SignupRequest } from '@features/auth/models/auth.model';
 import { MOCK_USERS } from '@features/users/data/users.data';
-import { Role } from '@features/users/models/user.enum';
 import { User } from '@features/users/models/user.interface';
-import { delay, finalize, Observable, of, throwError } from 'rxjs';
+import { delay, finalize, map, Observable, of, throwError } from 'rxjs';
+import { environment } from '../../../../../environment';
+import { Role } from '@features/users';
 
 @Injectable({
   providedIn: 'root',
@@ -12,29 +13,23 @@ import { delay, finalize, Observable, of, throwError } from 'rxjs';
 export class AuthService {
   private readonly accessTokenKey = 'access_token';
   private readonly currentUserKey = 'currentUser';
-
-  login(credentials: LoginRequest): Observable<HttpResponse<LoginResponse>> {
-    const user = MOCK_USERS.find(
-      (u) =>
-        u.email.toLowerCase() === credentials.email.trim().toLowerCase() &&
-        u.password === credentials.password,
-    );
-    if (!user) {
-      return throwError(() => new Error('Invalid credentials'));
-    }
-    if (!user.isActive) {
-      return throwError(
-        () => new Error('Your account has been deactivated. Contact an administrator.'),
-      );
-    }
-    const { password, ...userInfo } = user;
-    return of(
-      new HttpResponse({
-        status: 201,
-        body: {
-          accessToken: `access-token-${user.id}`,
+  private readonly endpoint = `${environment.baseURL}/users`;
+  private readonly httpClient = inject(HttpClient);
+  login({ email, password }: LoginRequest): Observable<LoginResponse> {
+    return this.httpClient.get<User[]>(this.endpoint).pipe(
+      map((users) => {
+        const user = users.find((user) => user.email === email && user.password === password);
+        if (!user) {
+          throw new Error('Invalid credentials');
+        }
+        if (!user.isActive) {
+          throw new Error('Your account has been deactivated. Contact an administrator.');
+        }
+        const { password: pwd, ...userInfo } = user;
+        return {
+          accessToken: `mock-access-token-user-${user.id}`,
           user: userInfo,
-        },
+        };
       }),
     );
   }
@@ -54,7 +49,7 @@ export class AuthService {
 
     const now = new Date();
     const user: User = {
-      id: Math.max(0, ...MOCK_USERS.map((item) => item.id)) + 1,
+      id: String(Math.max(0, ...MOCK_USERS.map((item) => Number(item.id) || 0)) + 1),
       firstName: input.firstName.trim(),
       lastName: input.lastName.trim(),
       email,

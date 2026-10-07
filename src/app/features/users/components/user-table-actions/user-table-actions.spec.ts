@@ -8,7 +8,7 @@ describe('UserActionsButton', () => {
   let component: UserActionsButton;
   let fixture: ComponentFixture<UserActionsButton>;
   const user: User = {
-    id: 42,
+    id: '42',
     firstName: 'Alex',
     lastName: 'Admin',
     email: 'alex@example.test',

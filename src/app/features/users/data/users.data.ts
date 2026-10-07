@@ -3,7 +3,7 @@ import { User } from "../models/user.interface";
 
 export const MOCK_USERS: User[] = [
   {
-    id: 1,
+    id: '1',
     firstName: 'Emily',
     lastName: 'Johnson',
     email: 'emily.johnson@x.dummyjson.com',
@@ -14,7 +14,7 @@ export const MOCK_USERS: User[] = [
     updatedAt: new Date(),
   },
   {
-    id: 2,
+    id: '2',
     firstName: 'User',
     lastName: 'Emma',
     email: 'user.emma@x.dummyjson.com',
@@ -25,7 +25,7 @@ export const MOCK_USERS: User[] = [
     updatedAt: new Date(),
   },
   {
-    id: 3,
+    id: '3',
     firstName: 'Inactive',
     lastName: 'User',
     email: 'inactive.user@x.dummyjson.com',

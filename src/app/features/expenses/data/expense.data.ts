@@ -3,7 +3,7 @@ import { Expense } from '../models/expense.interface';
 export const MOCK_EXPENSES: Expense[] = [
 	{
 		id: 1,
-		userId: 1,
+		userId: '1',
 		userName: 'Emily Johnson',
 		title: 'Client lunch',
 		description: 'Lunch with the product partner',
@@ -17,7 +17,7 @@ export const MOCK_EXPENSES: Expense[] = [
 	},
 	{
 		id: 2,
-		userId: 2,
+		userId: '2',
 		userName: 'Emma User',
 		title: 'Monthly bus pass',
 		amount: 45,
@@ -30,7 +30,7 @@ export const MOCK_EXPENSES: Expense[] = [
 	},
 	{
 		id: 3,
-		userId: 3,
+		userId: '3',
 		userName: 'Inactive User',
 		title: 'Team workspace supplies',
 		amount: 128.75,
@@ -38,13 +38,12 @@ export const MOCK_EXPENSES: Expense[] = [
 		category: 'office',
 		expenseDate: new Date('2026-09-20T10:30:00'),
 		status: 'rejected',
-		rejectionReason: 'Please attach the itemized receipt.',
 		createdAt: new Date('2026-09-20T15:00:00'),
 		updatedAt: new Date('2026-09-21T08:00:00'),
 	},
 	{
 		id: 4,
-		userId: 2,
+		userId: '2',
 		userName: 'Emma User',
 		title: 'Project dinner',
 		amount: 62.4,
@@ -57,7 +56,7 @@ export const MOCK_EXPENSES: Expense[] = [
 	},
 	{
 		id: 5,
-		userId: 1,
+		userId: '1',
 		userName: 'Emily Johnson',
 		title: 'Conference hotel',
 		amount: 420,
@@ -70,7 +69,7 @@ export const MOCK_EXPENSES: Expense[] = [
 	},
 	{
 		id: 6,
-		userId: 3,
+		userId: '3',
 		userName: 'Inactive User',
 		title: 'Taxi to airport',
 		amount: 38.2,
@@ -83,7 +82,7 @@ export const MOCK_EXPENSES: Expense[] = [
 	},
 	{
 		id: 7,
-		userId: 2,
+		userId: '2',
 		userName: 'Emma User',
 		title: 'Design reference books',
 		amount: 54.99,
@@ -96,7 +95,7 @@ export const MOCK_EXPENSES: Expense[] = [
 	},
 	{
 		id: 8,
-		userId: 1,
+		userId: '1',
 		userName: 'Emily Johnson',
 		title: 'Team event tickets',
 		amount: 150,
@@ -109,7 +108,7 @@ export const MOCK_EXPENSES: Expense[] = [
 	},
 	{
 		id: 9,
-		userId: 2,
+		userId: '2',
 		userName: 'Emma User',
 		title: 'Coffee with client',
 		amount: 18.75,
@@ -117,13 +116,12 @@ export const MOCK_EXPENSES: Expense[] = [
 		category: 'food',
 		expenseDate: new Date('2026-09-08T10:00:00'),
 		status: 'rejected',
-		rejectionReason: 'Please provide the business purpose.',
 		createdAt: new Date('2026-09-08T11:00:00'),
 		updatedAt: new Date('2026-09-09T10:00:00'),
 	},
 	{
 		id: 10,
-		userId: 3,
+		userId: '3',
 		userName: 'Inactive User',
 		title: 'Office parking',
 		amount: 22,
@@ -136,7 +134,7 @@ export const MOCK_EXPENSES: Expense[] = [
 	},
 	{
 		id: 11,
-		userId: 1,
+		userId: '1',
 		userName: 'Emily Johnson',
 		title: 'Workshop materials',
 		amount: 72.35,
@@ -149,7 +147,7 @@ export const MOCK_EXPENSES: Expense[] = [
 	},
 	{
 		id: 12,
-		userId: 2,
+		userId: '2',
 		userName: 'Emma User',
 		title: 'Airport train',
 		amount: 16.8,
