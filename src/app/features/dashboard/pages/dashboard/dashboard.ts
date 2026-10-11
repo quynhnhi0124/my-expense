@@ -64,7 +64,12 @@ export class Dashboard {
     MOCK_USERS.filter((user) => user.isActive).map((user) => user.id),
   );
 
-  private readonly statuses: ExpenseStatus[] = ['draft', 'pending', 'approved', 'rejected'];
+  private readonly statuses: ExpenseStatus[] = [
+    ExpenseStatus.APPROVED,
+    ExpenseStatus.DRAFT,
+    ExpenseStatus.PENDING,
+    ExpenseStatus.REJECTED
+  ]
   private readonly myExpensesSorting = signal<SortingState>([]);
   private readonly recentExpensesSorting = signal<SortingState>([]);
   private readonly expenseColumns = createExpenseColumns({

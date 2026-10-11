@@ -1,11 +1,16 @@
 import { Injectable, inject } from '@angular/core';
 import { AuthService } from '@core/auth/services/auth.service';
 import { ApiGetListResponse, SearchParams } from '@shared/interfaces';
-import { Observable, of, throwError } from 'rxjs';
+import { map, Observable, of, throwError } from 'rxjs';
 import { Role } from '../../users/models/user.enum';
-import { Expense, ExpenseCategoryType, ExpenseStatus } from '../models/expense.interface';
+import {
+  Expense,
+  ExpenseCategoryType,
+  ExpenseStatus,
+} from '../models/expense.interface';
 import { MOCK_EXPENSES } from '../data/expense.data';
-import { MOCK_USERS } from '../../users/data/users.data';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../../../environment';
 
 export type ExpenseScope = 'mine' | 'all';
 
@@ -25,35 +30,58 @@ export interface CreateExpenseInput {
   expenseDate: Date;
 }
 
+interface CreateExpensePayload {
+  title: string;
+  description: string;
+  amount: string;
+  currency: Expense['currency'];
+  category: ExpenseCategoryType;
+  expenseDate: string;
+  status: ExpenseStatus.DRAFT;
+  createdAt: string;
+  updatedAt: string;
+  user: { email: string };
+  userId: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ExpenseService {
   private readonly _authService = inject(AuthService);
+  private readonly _http = inject(HttpClient);
 
-  getExpenses({
-    search = '',
-    page = '1',
-    limit = '30',
-    expenseDates = [],
-    statuses = [],
-    categories = [],
-    scope = 'mine',
-  }: ExpenseQuery): Observable<ApiGetListResponse<Expense>> {
+  getExpenses(params: ExpenseQuery): Observable<ApiGetListResponse<Expense>> {
     const currentUser = this._authService.getCurrentUser();
+    const canViewAll = currentUser?.role === Role.ADMIN && params.scope === 'all';
+    const url = canViewAll
+      ? `${environment.baseURL}/expenses`
+      : `${environment.baseURL}/users/${currentUser?.id}/expenses`;
+    return this._http
+      .get<Expense[]>(url)
+      .pipe(map((expenses) => this.handleExpenseData(expenses, canViewAll, params)));
+  }
+
+  handleExpenseData(
+    data: Expense[],
+    canViewAll: boolean,
+    {
+      search = '',
+      page = '1',
+      limit = '30',
+      expenseDates = [],
+      statuses = [],
+      categories = [],
+    }: ExpenseQuery,
+  ): ApiGetListResponse<Expense> {
     const normalizedSearch = search.trim().toLowerCase();
-    const canViewAll = currentUser?.role === Role.ADMIN && scope === 'all';
-    const accessibleExpenses = currentUser
-      ? MOCK_EXPENSES.filter((expense) => canViewAll || expense.userId === currentUser.id)
-      : [];
     const selectedDateKeys = new Set(expenseDates.map((date) => this.toDateKey(date)));
-    const expenses = accessibleExpenses.filter((expense) => {
+    const expenses = data.filter((expense) => {
       const searchableValues = [
-          expense.title,
-          expense.description ?? '',
-          expense.userName,
-          expense.category,
-          expense.status,
-          ...(canViewAll ? [this.getUserEmail(expense.userId)] : []),
-        ];
+        expense.title,
+        expense.description ?? '',
+        expense.category,
+        expense.status,
+        ...(canViewAll ? [expense.user.email] : []),
+      ];
       const matchesSearch =
         !normalizedSearch ||
         searchableValues.some((value) => value.toLowerCase().includes(normalizedSearch));
@@ -65,12 +93,12 @@ export class ExpenseService {
       return matchesSearch && matchesDate && matchesStatus && matchesCategory;
     });
 
-    return of({
+    return {
       data: expenses,
       rowCount: expenses.length,
       skip: (Number(page) - 1) * Number(limit),
       limit: Number(limit),
-    });
+    };
   }
 
   updateExpenseStatus(id: number, status: ExpenseStatus): Observable<Expense> {
@@ -94,34 +122,29 @@ export class ExpenseService {
       return throwError(() => new Error('You must be signed in to create an expense.'));
     }
 
-    const now = new Date();
-    const expense: Expense = {
-      id: Math.max(0, ...MOCK_EXPENSES.map((item) => item.id)) + 1,
-      userId: user.id,
-      userName: `${user.firstName} ${user.lastName}`,
+    const now = new Date().toISOString();
+    const payload: CreateExpensePayload = {
       title: input.title.trim(),
-      description: input.description?.trim() || undefined,
-      amount: input.amount,
+      description: input.description?.trim() ?? '',
+      amount: input.amount.toFixed(2),
       currency: input.currency,
       category: input.category,
-      expenseDate: input.expenseDate,
-      status: 'pending',
+      expenseDate: input.expenseDate.toISOString(),
+      status: ExpenseStatus.DRAFT,
       createdAt: now,
       updatedAt: now,
+      user: { email: user.email },
+      userId: user.id,
     };
 
-    MOCK_EXPENSES.unshift(expense);
-    return of(expense);
-  }
-
-  private getUserEmail(userId: string): string {
-    return MOCK_USERS.find((user) => user.id === userId)?.email.toLowerCase() ?? '';
+    return this._http.post<Expense>(`${environment.baseURL}/expenses`, payload);
   }
 
   private toDateKey(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
+    const selectedDate = new Date(date);
+    const year = selectedDate.getFullYear();
+    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(selectedDate.getDate()).padStart(2, '0');
 
     return `${year}-${month}-${day}`;
   }

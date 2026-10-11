@@ -1,26 +1,22 @@
-import { Component, computed, DestroyRef, inject, input, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, Validators } from '@angular/forms';
+import { FormControl } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { NgIcon, provideIcons } from '@ng-icons/core';
-import { lucideEllipsis } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
-import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
 import { HlmTabsImports } from '@spartan-ng/helm/tabs';
-import {
-  flexRenderComponent,
-  injectTable,
-  isFunction,
-  SortingState,
-} from '@tanstack/angular-table';
+import { injectTable, isFunction, SortingState } from '@tanstack/angular-table';
 import { debounceTime, distinctUntilChanged, map, switchMap, tap } from 'rxjs';
 import { toast } from '@spartan-ng/brain/sonner';
 import { AuthService } from '@core/auth/services/auth.service';
 import { Role } from '@features/users/models/user.enum';
-import { Expense, ExpenseCategoryType, ExpenseStatus } from '../../models/expense.interface';
-import { CreateExpenseInput, ExpenseScope, ExpenseService } from '../../services/expense.service';
-import { MOCK_USERS } from '@features/users/data/users.data';
+import {
+  Expense,
+  ExpenseCategoryType,
+  ExpenseStatus,
+  ExpenseStatusChangeHandler,
+} from '../../models/expense.interface';
+import { ExpenseScope, ExpenseService } from '../../services/expense.service';
 import { ExpenseCategoryService } from '../../services/expense-category.service';
 import { ExpenseCategory } from '../../models/expense-category.interface';
 import { CommonTable } from '@shared/components/table/table-data/common-table.component';
@@ -31,56 +27,23 @@ import { FilterItem, TableFilterChange, TableFilterGroup } from '@shared/interfa
 import { parseDates, toDateKey, updateTableFilterQueryParams } from '@shared/utils';
 import {
   createExpenseColumns,
-  expenseColumnHelper as columnHelper,
   expenseTableFeatures,
 } from '../../expense-table';
-type ExpenseStatusChangeHandler = (expenseId: number, status: ExpenseStatus) => void;
-
-@Component({
-  imports: [HlmButtonImports, HlmDropdownMenuImports, NgIcon],
-  providers: [provideIcons({ lucideEllipsis })],
-  template: `
-    <button
-      hlmBtn
-      type="button"
-      size="icon-sm"
-      variant="ghost"
-      aria-label="Change expense status"
-      [hlmDropdownMenuTrigger]="menu"
-    >
-      <ng-icon name="lucideEllipsis" />
-    </button>
-    <ng-template #menu>
-      <hlm-dropdown-menu class="w-44">
-        <hlm-dropdown-menu-label>Change status</hlm-dropdown-menu-label>
-        @for (status of statuses; track status) {
-          <button
-            hlmDropdownMenuItem
-            [disabled]="status === expense().status"
-            (click)="updateStatus()(expense().id, status)"
-          >
-            Set {{ status }}
-          </button>
-        }
-      </hlm-dropdown-menu>
-    </ng-template>
-  `,
-})
-class ExpenseActionsMenu {
-  readonly expense = input.required<Expense>();
-  readonly updateStatus = input.required<ExpenseStatusChangeHandler>();
-  readonly statuses: ExpenseStatus[] = ['draft', 'pending', 'approved', 'rejected'];
-}
-
+import { createAllExpenseColumns } from './expense-list.columns';
+import {
+  EXPENSE_CATEGORIES,
+  EXPENSE_STATUS_OPTIONS,
+  parseExpenseListRouteFilters,
+} from './expense-list.filters';
 @Component({
   imports: [
-    HlmButtonImports,
     CommonTable,
-    HlmTabsImports,
     NgTemplateOutlet,
     TableDataHeader,
     TableDataToolbar,
     CreateExpenseDialog,
+    HlmTabsImports,
+    HlmButtonImports,
   ],
   selector: 'app-expense-list',
   styleUrl: './expense-list.css',
@@ -96,45 +59,26 @@ export class ExpenseList implements OnInit {
   readonly isAdmin = this._authService.getCurrentUser()?.role === Role.ADMIN;
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly activeView = signal<ExpenseScope>('mine');
-  readonly categoryValues: ExpenseCategoryType[] = [
-    'food',
-    'transportation',
-    'accommodation',
-    'entertainment',
-    'office',
-    'other',
-  ];
   readonly createDialogState = signal<'open' | 'closed'>('closed');
-  readonly isSubmitting = signal(false);
   readonly availableCategories = signal<ExpenseCategory[]>([]);
-  readonly categoryOptions = computed(() =>
+  readonly categoryOptions = computed<FilterItem<ExpenseCategoryType>[]>(() =>
     this.availableCategories().flatMap((category) => {
       const value = this.toExpenseCategoryType(category.name);
-      return value ? [{ value, label: category.name }] : [];
+      return value ? [{ id: value, value, label: category.name }] : [];
     }),
   );
-  readonly createExpenseForm = new FormGroup({
-    title: new FormControl('', {
-      nonNullable: true,
-      validators: [Validators.required, Validators.maxLength(120)],
-    }),
-    description: new FormControl('', { nonNullable: true }),
-    amount: new FormControl<number | null>(null, [Validators.required, Validators.min(0.01)]),
-    currency: new FormControl<'USD' | 'VND'>('USD', { nonNullable: true }),
-    category: new FormControl<ExpenseCategoryType | null>(null, [Validators.required]),
-    expenseDate: new FormControl<Date | null>(null, [Validators.required]),
-  });
-  readonly selectedMineDates = signal<Date[]>([]);
-  readonly selectedDates = signal<Date[]>([]);
-  readonly selectedMineCategories = signal<ExpenseCategoryType[]>([]);
-  readonly selectedAllCategories = signal<ExpenseCategoryType[]>([]);
-  readonly statuses: FilterItem<ExpenseStatus>[] = [
-    { id: 'draft', label: 'Draft', value: 'draft' },
-    { id: 'pending', label: 'Pending', value: 'pending' },
-    { id: 'approved', label: 'Approved', value: 'approved' },
-    { id: 'rejected', label: 'Rejected', value: 'rejected' },
-  ];
-  readonly selectedStatuses = signal<ExpenseStatus[]>([]);
+  readonly filters = {
+    mine: {
+      dates: signal<Date[]>([]),
+      categories: signal<ExpenseCategoryType[]>([]),
+    },
+    all: {
+      dates: signal<Date[]>([]),
+      categories: signal<ExpenseCategoryType[]>([]),
+      statuses: signal<ExpenseStatus[]>([]),
+    },
+  };
+  readonly statuses = EXPENSE_STATUS_OPTIONS;
   readonly data = signal<Expense[]>([]);
   private readonly sorting = signal<SortingState>([]);
 
@@ -144,9 +88,9 @@ export class ExpenseList implements OnInit {
         key: 'expenseDates',
         label: 'Expense date',
         type: 'date',
-        selectedValues: this.selectedMineDates().map((date) => toDateKey(date)),
+        selectedValues: this.filters.mine.dates().map((date) => toDateKey(date)),
       },
-      this.createCategoryFilterGroup(this.selectedMineCategories()),
+      this.createCategoryFilterGroup(this.filters.mine.categories()),
     ];
   }
 
@@ -156,34 +100,46 @@ export class ExpenseList implements OnInit {
         key: 'expenseDates',
         label: 'Expense date',
         type: 'date',
-        selectedValues: this.selectedDates().map((date) => toDateKey(date)),
+        selectedValues: this.filters.all.dates().map((date) => toDateKey(date)),
       },
       {
         key: 'status',
         label: 'Status',
         type: 'checkbox',
-        options: this.statuses.map((item) => ({ ...item, value: item.value })),
-        selectedValues: this.selectedStatuses().map(String),
+        options: this.statuses,
+        selectedValues: this.filters.all.statuses(),
       },
-      this.createCategoryFilterGroup(this.selectedAllCategories()),
+      this.createCategoryFilterGroup(this.filters.all.categories()),
     ];
   }
 
-  private createCategoryFilterGroup(
-    selectedCategories: ExpenseCategoryType[],
-  ): TableFilterGroup {
+  private createCategoryFilterGroup(selectedCategories: ExpenseCategoryType[]): TableFilterGroup {
     return {
       key: 'category',
       label: 'Category',
       type: 'checkbox',
-      options: this.categoryOptions().map((item) => ({
-        id: item.value,
-        label: item.label,
-        value: item.value,
-      })),
+      options: this.categoryOptions(),
       selectedValues: selectedCategories,
     };
   }
+
+  private readonly handleStatusChange: ExpenseStatusChangeHandler = (expenseId, status) => {
+    this._expenseService
+      .updateExpenseStatus(expenseId, status)
+      .pipe(takeUntilDestroyed(this._destroyRef))
+      .subscribe({
+        next: (updatedExpense) => {
+          this.data.update((expenses) =>
+            expenses.map((expense) =>
+              expense.id === updatedExpense.id ? updatedExpense : expense,
+            ),
+          );
+          toast.success('Expense status updated');
+        },
+        error: () => toast.error('Unable to update expense status'),
+      });
+  };
+
   private readonly personalColumns = createExpenseColumns({
     titleHeader: 'Expense',
     dateHeader: 'Expense date',
@@ -195,23 +151,10 @@ export class ExpenseList implements OnInit {
       }).format(expense.amount),
     formatDate: (date) => new DatePipe('en-US').transform(date, 'mediumDate') ?? '',
   });
-  private readonly allUserColumns = columnHelper.columns([
-    columnHelper.accessor('userName', { header: 'User', sortFn: 'text' }),
-    columnHelper.accessor(
-      (expense) => MOCK_USERS.find((user) => user.id === expense.userId)?.email ?? '',
-      { id: 'userEmail', header: 'Email', sortFn: 'text' },
-    ),
-    ...this.personalColumns,
-    columnHelper.display({
-      id: 'actions',
-      header: 'Actions',
-      cell: (info) =>
-        flexRenderComponent(ExpenseActionsMenu, {
-          inputs: { expense: info.row.original, updateStatus: this.handleStatusChange },
-        }),
-      enableSorting: false,
-    }),
-  ]);
+  private readonly allUserColumns = createAllExpenseColumns(
+    this.personalColumns,
+    this.handleStatusChange,
+  );
   readonly columns = computed(() =>
     this.isAdmin && this.activeView() === 'all' ? this.allUserColumns : this.personalColumns,
   );
@@ -235,31 +178,17 @@ export class ExpenseList implements OnInit {
 
     this._route.queryParamMap
       .pipe(
-        map((params) => ({
-          view: this.isAdmin && params.get('view') === 'all' ? ('all' as const) : ('mine' as const),
-          search: params.get('search') ?? '',
-          expenseDates: parseDates(params.getAll('expenseDates')),
-          categories: params
-            .getAll('categories')
-            .filter((category): category is ExpenseCategoryType =>
-              this.categoryValues.includes(category as ExpenseCategoryType),
-            ),
-          statuses: params
-            .getAll('statuses')
-            .filter((status): status is ExpenseStatus =>
-              this.statuses.some((item) => item.value === status),
-            ),
-        })),
+        map((params) => parseExpenseListRouteFilters(params, this.isAdmin)),
         tap(({ view, search, expenseDates, categories, statuses }) => {
           this.activeView.set(view);
           this.searchControl.setValue(search, { emitEvent: false });
           if (view === 'mine') {
-            this.selectedMineDates.set(expenseDates);
-            this.selectedMineCategories.set(categories);
+            this.filters.mine.dates.set(expenseDates);
+            this.filters.mine.categories.set(categories);
           } else {
-            this.selectedDates.set(expenseDates);
-            this.selectedStatuses.set(statuses);
-            this.selectedAllCategories.set(categories);
+            this.filters.all.dates.set(expenseDates);
+            this.filters.all.statuses.set(statuses);
+            this.filters.all.categories.set(categories);
           }
           this.table.setPageIndex(0);
         }),
@@ -276,64 +205,48 @@ export class ExpenseList implements OnInit {
       )
       .subscribe(({ data }) => this.data.set(data));
   }
-//https://support.google.com/youtube/contact/familyplan_support
+
   onTabActivated(tab: string): void {
     if (!this.isAdmin) return;
 
     const nextView = tab === 'all' ? 'all' : 'mine';
     if (nextView === this.activeView()) return;
-
-    if (this.activeView() === 'mine') {
-      this.searchControl.setValue('', { emitEvent: false });
-      this.selectedMineDates.set([]);
-      this.selectedMineCategories.set([]);
-    } else {
-      this.searchControl.setValue('', { emitEvent: false });
-      this.selectedDates.set([]);
-      this.selectedStatuses.set([]);
-      this.selectedAllCategories.set([]);
-    }
-
+    this.searchControl.setValue('', { emitEvent: false });
+    this.clearViewFilters(this.activeView());
     this.activeView.set(nextView);
     this.table.setPageIndex(0);
     this.updateFilterQueryParams();
   }
 
   onFilterChange(change: TableFilterChange): void {
-    if (change.key === 'status') {
-      this.selectedStatuses.set(
-        this.statuses
-          .filter((item) => change.selectedValues.includes(item.value))
-          .map((item) => item.value),
-      );
-      this.updateFilterQueryParams();
-      return;
+    switch (change.key) {
+      case 'status':
+        this.filters.all.statuses.set(
+          this.statuses
+            .filter((item) => change.selectedValues.includes(item.value))
+            .map((item) => item.value),
+        );
+        break;
+      case 'category': {
+        const categories = change.selectedValues.filter(
+          (value): value is ExpenseCategoryType =>
+            EXPENSE_CATEGORIES.includes(value as ExpenseCategoryType),
+        );
+        this.filters[this.activeView()].categories.set(categories);
+        break;
+      }
+      case 'expenseDates': {
+        const dates = parseDates(change.selectedValues);
+        this.filters[this.activeView()].dates.set(dates);
+        break;
+      }
+      default:
+        return;
     }
 
-    if (change.key === 'category') {
-      const selectedCategories = change.selectedValues.filter(
-        (value): value is ExpenseCategoryType =>
-          this.categoryValues.includes(value as ExpenseCategoryType),
-      );
-      if (this.activeView() === 'all') {
-        this.selectedAllCategories.set(selectedCategories);
-      } else {
-        this.selectedMineCategories.set(selectedCategories);
-      }
-      this.updateFilterQueryParams();
-      return;
-    }
-
-    if (change.key === 'expenseDates') {
-      const dates = parseDates(change.selectedValues);
-      if (this.activeView() === 'all') {
-        this.selectedDates.set(dates);
-      } else {
-        this.selectedMineDates.set(dates);
-      }
-      this.updateFilterQueryParams();
-    }
+    this.updateFilterQueryParams();
   }
+
 
   onCreateDialogStateChange(state: string): void {
     if (state === 'open' || state === 'closed') {
@@ -341,98 +254,20 @@ export class ExpenseList implements OnInit {
     }
   }
 
-  createExpense(): void {
-    if (this.createExpenseForm.invalid) {
-      this.createExpenseForm.markAllAsTouched();
-      return;
-    }
-
-    const formValue = this.createExpenseForm.getRawValue();
-    if (
-      formValue.amount === null ||
-      formValue.category === null ||
-      formValue.expenseDate === null
-    ) {
-      return;
-    }
-
-    const input: CreateExpenseInput = {
-      title: formValue.title,
-      description: formValue.description,
-      amount: formValue.amount,
-      currency: formValue.currency,
-      category: formValue.category,
-      expenseDate: formValue.expenseDate,
-    };
-
-    this.isSubmitting.set(true);
-    this._expenseService
-      .createExpense(input)
-      .pipe(takeUntilDestroyed(this._destroyRef))
-      .subscribe({
-        next: () => {
-          toast.success('Expense created');
-          this.createExpenseForm.reset({
-            title: '',
-            description: '',
-            amount: null,
-            currency: 'USD',
-            category: null,
-            expenseDate: null,
-          });
-          this.createDialogState.set('closed');
-          this.reloadPersonalExpenses();
-          this.isSubmitting.set(false);
-        },
-        error: (error) => {
-          toast.error('Unable to create expense');
-          this.isSubmitting.set(false);
-        },
-      });
-  }
-
-  onExpenseDatesChange(dates: Date[] | undefined): void {
-    this.selectedDates.set(dates ?? []);
-    this.updateFilterQueryParams();
-  }
-
   clearFilters(): void {
-    if (this.activeView() === 'all') {
-      this.searchControl.setValue('', { emitEvent: false });
-      this.selectedDates.set([]);
-      this.selectedStatuses.set([]);
-      this.selectedAllCategories.set([]);
-    } else {
-      this.searchControl.setValue('', { emitEvent: false });
-      this.selectedMineDates.set([]);
-      this.selectedMineCategories.set([]);
+    this.searchControl.setValue('', { emitEvent: false });
+    this.clearViewFilters(this.activeView());
+    this.table.setPageIndex(0);
+    this.updateFilterQueryParams();
+  }
+
+  private clearViewFilters(view: ExpenseScope): void {
+    this.filters[view].dates.set([]);
+    this.filters[view].categories.set([]);
+    if (view === 'all') {
+      this.filters.all.statuses.set([]);
     }
-    this.updateFilterQueryParams();
   }
-
-  toggleStatus(status: ExpenseStatus, checked: boolean): void {
-    this.selectedStatuses.update((selected) =>
-      checked ? [...selected, status] : selected.filter((item) => item !== status),
-    );
-    this.updateFilterQueryParams();
-  }
-
-  private readonly handleStatusChange: ExpenseStatusChangeHandler = (expenseId, status) => {
-    this._expenseService
-      .updateExpenseStatus(expenseId, status)
-      .pipe(takeUntilDestroyed(this._destroyRef))
-      .subscribe({
-        next: (updatedExpense) => {
-          this.data.update((expenses) =>
-            expenses.map((expense) =>
-              expense.id === updatedExpense.id ? updatedExpense : expense,
-            ),
-          );
-          toast.success('Expense status updated');
-        },
-        error: () => toast.error('Unable to update expense status'),
-      });
-  };
 
   readonly table = injectTable(() => ({
     key: 'expense-list',
@@ -449,16 +284,21 @@ export class ExpenseList implements OnInit {
     return value.charAt(0).toUpperCase() + value.slice(1).replaceAll('_', ' ');
   }
 
-  private reloadPersonalExpenses(): void {
+  reloadCurrentExpenses(): void {
+    const isAllView = this.isAdmin && this.activeView() === 'all';
     this._expenseService
       .getExpenses({
-        scope: 'mine',
-        search: this.searchControl.value,
-        expenseDates: this.selectedMineDates(),
-        categories: this.selectedMineCategories(),
+        scope: isAllView ? 'all' : 'mine',
+        search: this.searchControl.value.trim(),
+        expenseDates: this.filters[this.activeView()].dates(),
+        categories: this.filters[this.activeView()].categories(),
+        statuses: isAllView ? this.filters.all.statuses() : [],
       })
       .pipe(takeUntilDestroyed(this._destroyRef))
-      .subscribe(({ data }) => this.data.set(data));
+      .subscribe({
+        next: ({ data }) => this.data.set(data),
+        error: () => toast.error('Unable to reload expenses'),
+      });
   }
 
   private toExpenseCategoryType(name: string): ExpenseCategoryType | null {
@@ -480,11 +320,9 @@ export class ExpenseList implements OnInit {
       view: this.isAdmin && isAllView ? 'all' : null,
       search: this.searchControl.value.trim() || null,
       email: null,
-      expenseDates: (isAllView ? this.selectedDates() : this.selectedMineDates()).map((date) =>
-        toDateKey(date),
-      ),
-      categories: isAllView ? this.selectedAllCategories() : this.selectedMineCategories(),
-      statuses: isAllView ? this.selectedStatuses() : [],
+      expenseDates: this.filters[this.activeView()].dates().map((date) => toDateKey(date)),
+      categories: this.filters[this.activeView()].categories(),
+      statuses: isAllView ? this.filters.all.statuses() : [],
     });
   }
 }

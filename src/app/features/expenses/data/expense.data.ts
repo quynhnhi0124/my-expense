@@ -1,4 +1,4 @@
-import { Expense } from '../models/expense.interface';
+import { Expense, ExpenseStatus } from '../models/expense.interface';
 
 export const MOCK_EXPENSES: Expense[] = [
 	{
@@ -11,9 +11,12 @@ export const MOCK_EXPENSES: Expense[] = [
 		currency: 'USD',
 		category: 'food',
 		expenseDate: new Date('2026-09-24T12:00:00'),
-		status: 'approved',
+		status: ExpenseStatus.APPROVED,
 		createdAt: new Date('2026-09-24T14:00:00'),
 		updatedAt: new Date('2026-09-25T09:00:00'),
+		user: {
+			email: "a@email.com"
+		}
 	},
 	{
 		id: 2,
@@ -24,9 +27,12 @@ export const MOCK_EXPENSES: Expense[] = [
 		currency: 'USD',
 		category: 'transportation',
 		expenseDate: new Date('2026-09-22T09:00:00'),
-		status: 'pending',
+		status: ExpenseStatus.PENDING,
 		createdAt: new Date('2026-09-22T10:00:00'),
 		updatedAt: new Date('2026-09-22T10:00:00'),
+		user: {
+			email: "a@email.com"
+		}
 	},
 	{
 		id: 3,
@@ -37,9 +43,12 @@ export const MOCK_EXPENSES: Expense[] = [
 		currency: 'USD',
 		category: 'office',
 		expenseDate: new Date('2026-09-20T10:30:00'),
-		status: 'rejected',
+		status: ExpenseStatus.REJECTED,
 		createdAt: new Date('2026-09-20T15:00:00'),
 		updatedAt: new Date('2026-09-21T08:00:00'),
+		user: {
+			email: "a@email.com"
+		}
 	},
 	{
 		id: 4,
@@ -50,9 +59,12 @@ export const MOCK_EXPENSES: Expense[] = [
 		currency: 'USD',
 		category: 'food',
 		expenseDate: new Date('2026-09-18T19:00:00'),
-		status: 'approved',
+		status: ExpenseStatus.APPROVED,
 		createdAt: new Date('2026-09-19T09:00:00'),
 		updatedAt: new Date('2026-09-20T11:00:00'),
+		user: {
+			email: "a@email.com"
+		}
 	},
 	{
 		id: 5,
@@ -63,9 +75,12 @@ export const MOCK_EXPENSES: Expense[] = [
 		currency: 'USD',
 		category: 'accommodation',
 		expenseDate: new Date('2026-09-16T15:00:00'),
-		status: 'pending',
+		status: ExpenseStatus.PENDING,
 		createdAt: new Date('2026-09-17T08:30:00'),
 		updatedAt: new Date('2026-09-17T08:30:00'),
+		user: {
+			email: "a@email.com"
+		}
 	},
 	{
 		id: 6,
@@ -76,9 +91,12 @@ export const MOCK_EXPENSES: Expense[] = [
 		currency: 'USD',
 		category: 'transportation',
 		expenseDate: new Date('2026-09-14T06:45:00'),
-		status: 'approved',
+		status: ExpenseStatus.APPROVED,
 		createdAt: new Date('2026-09-14T08:00:00'),
 		updatedAt: new Date('2026-09-15T10:00:00'),
+		user: {
+			email: "a@email.com"
+		}
 	},
 	{
 		id: 7,
@@ -89,9 +107,12 @@ export const MOCK_EXPENSES: Expense[] = [
 		currency: 'USD',
 		category: 'office',
 		expenseDate: new Date('2026-09-12T13:00:00'),
-		status: 'draft',
+		status: ExpenseStatus.DRAFT,
 		createdAt: new Date('2026-09-12T13:30:00'),
 		updatedAt: new Date('2026-09-12T13:30:00'),
+		user: {
+			email: "a@email.com"
+		}
 	},
 	{
 		id: 8,
@@ -102,9 +123,12 @@ export const MOCK_EXPENSES: Expense[] = [
 		currency: 'USD',
 		category: 'entertainment',
 		expenseDate: new Date('2026-09-10T18:00:00'),
-		status: 'approved',
+		status: ExpenseStatus.APPROVED,
 		createdAt: new Date('2026-09-11T09:00:00'),
 		updatedAt: new Date('2026-09-12T09:00:00'),
+		user: {
+			email: "a@email.com"
+		}
 	},
 	{
 		id: 9,
@@ -115,9 +139,12 @@ export const MOCK_EXPENSES: Expense[] = [
 		currency: 'USD',
 		category: 'food',
 		expenseDate: new Date('2026-09-08T10:00:00'),
-		status: 'rejected',
+		status: ExpenseStatus.REJECTED,
 		createdAt: new Date('2026-09-08T11:00:00'),
 		updatedAt: new Date('2026-09-09T10:00:00'),
+		user: {
+			email: "a@email.com"
+		}
 	},
 	{
 		id: 10,
@@ -128,9 +155,12 @@ export const MOCK_EXPENSES: Expense[] = [
 		currency: 'USD',
 		category: 'transportation',
 		expenseDate: new Date('2026-09-05T08:30:00'),
-		status: 'pending',
+		status: ExpenseStatus.PENDING,
 		createdAt: new Date('2026-09-05T09:00:00'),
 		updatedAt: new Date('2026-09-05T09:00:00'),
+		user: {
+			email: "a@email.com"
+		}
 	},
 	{
 		id: 11,
@@ -141,9 +171,12 @@ export const MOCK_EXPENSES: Expense[] = [
 		currency: 'USD',
 		category: 'other',
 		expenseDate: new Date('2026-09-02T14:00:00'),
-		status: 'draft',
+		status: ExpenseStatus.DRAFT,
 		createdAt: new Date('2026-09-02T15:00:00'),
 		updatedAt: new Date('2026-09-02T15:00:00'),
+		user: {
+			email: "a@email.com"
+		}
 	},
 	{
 		id: 12,
@@ -154,8 +187,11 @@ export const MOCK_EXPENSES: Expense[] = [
 		currency: 'USD',
 		category: 'transportation',
 		expenseDate: new Date('2026-08-29T07:15:00'),
-		status: 'approved',
+		status: ExpenseStatus.APPROVED,
 		createdAt: new Date('2026-08-29T09:00:00'),
 		updatedAt: new Date('2026-08-30T09:00:00'),
+		user: {
+			email: "a@email.com"
+		}
 	},
 ];

@@ -3,8 +3,8 @@
   <ng-template #personalFilters>
     <div class="flex flex-wrap items-center gap-2">
       <table-data-toolbar class="w-full" [searchControl]="searchControl" [searchPlaceholder]="'Search expenses...'"
-        [filterGroups]="personalFilterGroups" (filterChange)="onFilterChange($event)" (clear)="clearFilters()"><button hlmBtn
-          type="button" class="ml-auto" (click)="createDialogState.set('open')">
+        [filterGroups]="personalFilterGroups" (filterChange)="onFilterChange($event)" (clear)="clearFilters()"><button
+          hlmBtn type="button" class="ml-auto" (click)="createDialogState.set('open')">
           Create expense
         </button></table-data-toolbar>
     </div>
@@ -21,9 +21,8 @@
     </div>
     <div hlmTabsContent="all">
       <div class="flex flex-wrap items-center gap-2">
-        <table-data-toolbar class="w-full" [searchControl]="searchControl"
-          [searchPlaceholder]="'Search expenses...'" [filterGroups]="allUserFilterGroups"
-          (filterChange)="onFilterChange($event)" (clear)="clearFilters()" />
+        <table-data-toolbar class="w-full" [searchControl]="searchControl" [searchPlaceholder]="'Search expenses...'"
+          [filterGroups]="allUserFilterGroups" (filterChange)="onFilterChange($event)" (clear)="clearFilters()" />
       </div>
     </div>
   </hlm-tabs>
@@ -31,14 +30,8 @@
   <ng-container *ngTemplateOutlet="personalFilters" />
   }
 
-  <create-expense-dialog
-    [createDialogState]="createDialogState()"
-    [createExpenseForm]="createExpenseForm"
-    [categoryOptions]="categoryOptions()"
-    [isSubmitting]="isSubmitting()"
-    (createDialogStateChange)="onCreateDialogStateChange($event)"
-    (createExpense)="createExpense()"
-  />
+  <create-expense-dialog [createDialogState]="createDialogState()" [categoryOptions]="categoryOptions()"
+    (createDialogStateChange)="onCreateDialogStateChange($event)" (expenseCreated)="reloadCurrentExpenses()" />
 
   <app-common-table [table]="table" emptyMessage="No expenses found." />
 </div>

@@ -1,8 +1,16 @@
-export type ExpenseStatus =
-  | 'draft'
-  | 'pending'
-  | 'approved'
-  | 'rejected';
+export enum ExpenseStatus {
+  DRAFT = 'draft',
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected'
+}
+
+export const ExpenseStatusLabel = {
+  [ExpenseStatus.DRAFT]: "Draft",
+  [ExpenseStatus.PENDING]: "Pending",
+  [ExpenseStatus.APPROVED]: "Approved",
+  [ExpenseStatus.REJECTED]: "Rejected"
+}
 
 export type ExpenseCategoryType =
   | 'food'
@@ -25,4 +33,9 @@ export interface Expense {
   status: ExpenseStatus;
   createdAt: Date;
   updatedAt: Date;
+  user: {
+    email: string
+  }
 }
+
+export type ExpenseStatusChangeHandler = (expenseId: number, status: ExpenseStatus) => void;

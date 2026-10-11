@@ -8,7 +8,7 @@ import { firstValueFrom } from 'rxjs';
 
 describe('ExpenseService', () => {
   const initialExpenses = MOCK_EXPENSES.map((expense) => ({ ...expense }));
-  let currentUser: { id: number; firstName: string; lastName: string; role: Role };
+  let currentUser: { id: string; firstName: string; lastName: string; role: Role };
   let service: ExpenseService;
 
   beforeEach(() => {
@@ -17,7 +17,7 @@ describe('ExpenseService', () => {
       MOCK_EXPENSES.length,
       ...initialExpenses.map((expense) => ({ ...expense })),
     );
-    currentUser = { id: 2, firstName: 'Emma', lastName: 'User', role: Role.USER };
+    currentUser = { id: '2', firstName: 'Emma', lastName: 'User', role: Role.USER };
     TestBed.configureTestingModule({
       providers: [
         ExpenseService,

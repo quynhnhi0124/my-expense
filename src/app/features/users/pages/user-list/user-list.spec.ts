@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
-import { Role } from '@features/users/models/user.enum';
+import { Role, UserStatus } from '@features/users/models/user.enum';
 import { UserList } from './user-list';
 
 describe('UserList', () => {
@@ -31,7 +31,7 @@ describe('UserList', () => {
 
   it('clears all user filter controls', () => {
     component.roleControl.setValue([Role.USER]);
-    component.statusControl.setValue(['inactive']);
+    component.statusControl.setValue([UserStatus.INACTIVE]);
     component.searchControl.setValue('Emma');
 
     component.clearFilters();

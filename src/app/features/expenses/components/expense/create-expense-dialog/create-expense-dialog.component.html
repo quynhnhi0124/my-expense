@@ -2,15 +2,15 @@
   <hlm-dialog-content *hlmDialogPortal class="sm:max-w-xl">
     <hlm-dialog-header>
       <h3 hlmDialogTitle>Create expense</h3>
-      <p hlmDialogDescription>Enter the expense details and submit for review.</p>
+      <p hlmDialogDescription>Enter the expense details and submit for review</p>
     </hlm-dialog-header>
 
-    <form [formGroup]="createExpenseForm()" (ngSubmit)="createExpense.emit()">
+    <form [formGroup]="createExpenseForm" (ngSubmit)="submit()">
       <div class="grid gap-4 py-2">
         <div class="grid gap-2">
           <label for="expenseTitle" class="text-sm font-medium">Title</label>
           <input hlmInput id="expenseTitle" formControlName="title" placeholder="Expense title" />
-          @if (createExpenseForm().controls['title'].touched && createExpenseForm().controls['title'].hasError('required'))
+          @if (createExpenseForm.controls['title'].touched && createExpenseForm.controls['title'].hasError('required'))
           {
           <p class="text-destructive text-sm">Title is required</p>
           }
@@ -26,7 +26,7 @@
             <label for="expenseAmount" class="text-sm font-medium">Amount</label>
             <input hlmInput id="expenseAmount" type="number" min="0.01" step="0.01" formControlName="amount"
               placeholder="0.00" />
-            @if (createExpenseForm().controls['amount'].touched && createExpenseForm().controls['amount'].invalid) {
+            @if (createExpenseForm.controls['amount'].touched && createExpenseForm.controls['amount'].invalid) {
             <p class="text-destructive text-sm">Enter an amount greater than zero</p>
             }
           </div>
@@ -52,8 +52,8 @@
                 Select expense date
               </hlm-date-picker-trigger>
             </hlm-date-picker>
-            @if (createExpenseForm().controls['expenseDate'].touched &&
-            createExpenseForm().controls['expenseDate'].hasError('required')) {
+            @if (createExpenseForm.controls['expenseDate'].touched &&
+            createExpenseForm.controls['expenseDate'].hasError('required')) {
             <p class="text-destructive text-sm">Expense date is required</p>
             }
           </div>
@@ -69,8 +69,8 @@
                 }
               </hlm-select-content>
             </hlm-select>
-            @if (createExpenseForm().controls['category'].touched &&
-            createExpenseForm().controls['category'].hasError('required')) {
+            @if (createExpenseForm.controls['category'].touched &&
+            createExpenseForm.controls['category'].hasError('required')) {
             <p class="text-destructive text-sm">Category is required</p>
             }
           </div>
@@ -81,7 +81,7 @@
         <button hlmBtn type="button" variant="outline" (click)="createDialogStateChange.emit('closed')">
           Cancel
         </button>
-        <button hlmBtn type="submit" [disabled]="createExpenseForm().invalid || isSubmitting()">
+        <button hlmBtn type="submit" [disabled]="createExpenseForm.invalid || isSubmitting()">
           Create expense
         </button>
       </hlm-dialog-footer>

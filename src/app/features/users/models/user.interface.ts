@@ -1,13 +1,11 @@
-import { Role } from './user.enum';
-
-export type UserStatus = 'active' | 'inactive';
+import { Role, UserStatus } from './user.enum';
 export interface User {
   id: string,
   email: string,
   password?: string,
   firstName: string,
   lastName: string,
-  isActive: boolean,
+  isActive: UserStatus,
   role: Role,
   createdAt: Date,
   updatedAt: Date

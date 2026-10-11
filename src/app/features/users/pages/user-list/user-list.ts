@@ -16,38 +16,22 @@ import {
   SortingState,
   sortFn_basic,
 } from '@tanstack/angular-table';
-import { User, UserStatus } from '@features/users/models/user.interface';
+import { User } from '@features/users/models/user.interface';
 import { UserService } from '@features/users/services/user.service';
-import {
-  UserActionsButton,
-  UserRoleAction,
-  UserStatusActionHandler,
-} from '@features/users/components/user-table-actions/user-table-actions';
-import {
-  catchError,
-  debounceTime,
-  distinctUntilChanged,
-  EMPTY,
-  map,
-  Observable,
-  switchMap,
-  tap,
-} from 'rxjs';
-import { Role } from '@features/users/models/user.enum';
-import { toast } from '@spartan-ng/brain/sonner';
+import { UserActionsButton } from '@features/users/components/user-table-actions/user-table-actions.component';
+import { debounceTime, distinctUntilChanged, finalize, map, switchMap, tap } from 'rxjs';
+import { Role, RoleLabel, UserStatus, UserStatusLabel } from '@features/users/models/user.enum';
 import { CommonTable } from '@shared/components/table/table-data/common-table.component';
 import { TableDataHeader } from '@shared/components/table/table-data-header/table-data-header.component';
 import { FilterItem, TableFilterChange, TableFilterGroup } from '@shared/interfaces/data.interface';
-import {
-  TableDataToolbar,
-} from '@shared/components/table/table-data-toolbar/table-data-toolbar.component';
+import { TableDataToolbar } from '@shared/components/table/table-data-toolbar/table-data-toolbar.component';
 import {
   StatusBadge,
   StatusBadgeProps,
 } from '@shared/components/status-badge/status-badge.component';
 import { updateTableFilterQueryParams } from '@shared/utils';
 
-export const features = tableFeatures({
+const features = tableFeatures({
   rowSortingFeature,
   rowPaginationFeature,
   sortedRowModel: createSortedRowModel(),
@@ -58,29 +42,25 @@ export const features = tableFeatures({
   },
 });
 
-export type UserTableFeatures = typeof features;
-export const { createAppColumnHelper } = createTableHook({
+type UserTableFeatures = typeof features;
+const { createAppColumnHelper } = createTableHook({
   features,
 });
 const columnHelper = createAppColumnHelper<User>();
 
 const userStatusBadges: Record<string, StatusBadgeProps> = {
-  true: { label: 'Active'},
-  false: { label: 'Inactive', variant: 'outline' },
+  [UserStatus.ACTIVE]: { label: UserStatusLabel[UserStatus.ACTIVE] },
+  [UserStatus.INACTIVE]: { label: UserStatusLabel[UserStatus.INACTIVE], variant: 'outline' },
 };
 
 interface UserListFilters {
   search: string;
-  roles: Role[];
-  statuses: UserStatus[];
+  role: Role[];
+  status: UserStatus[];
 }
 
 @Component({
-  imports: [
-    CommonTable,
-    TableDataHeader,
-    TableDataToolbar,
-  ],
+  imports: [CommonTable, TableDataHeader, TableDataToolbar],
   selector: 'app-user-list',
   styleUrl: './user-list.css',
   templateUrl: './user-list.html',
@@ -90,17 +70,21 @@ export class UserList implements OnInit {
   private readonly _destroyRef = inject(DestroyRef);
   private readonly _route = inject(ActivatedRoute);
   private readonly _router = inject(Router);
-
+  readonly loading = signal<boolean>(false);
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly roleControl = new FormControl<Role[]>([], { nonNullable: true });
   readonly statusControl = new FormControl<UserStatus[]>([], { nonNullable: true });
   readonly roles: FilterItem<Role>[] = [
-    { id: 'role-admin', label: 'Admin', value: Role.ADMIN },
-    { id: 'role-user', label: 'User', value: Role.USER },
+    { id: 'role-admin', label: RoleLabel[Role.ADMIN], value: Role.ADMIN },
+    { id: 'role-user', label: RoleLabel[Role.USER], value: Role.USER },
   ];
-  readonly statuses: FilterItem<UserStatus>[] = [
-    { id: 'status-active', label: 'Active', value: 'active' },
-    { id: 'status-inactive', label: 'Inactive', value: 'inactive' },
+  readonly status: FilterItem<UserStatus>[] = [
+    { id: 'status-active', label: UserStatusLabel[UserStatus.ACTIVE], value: UserStatus.ACTIVE },
+    {
+      id: 'status-inactive',
+      label: UserStatusLabel[UserStatus.INACTIVE],
+      value: UserStatus.INACTIVE,
+    },
   ];
   readonly data = signal<User[]>([]);
   private readonly sorting = signal<SortingState>([]);
@@ -110,13 +94,13 @@ export class UserList implements OnInit {
       {
         key: 'role',
         label: 'Role',
-        options: this.roles.map((item) => ({ ...item, value: item.value })),
-        selectedValues: this.roleControl.value.map(String),
+        options: this.roles,
+        selectedValues: this.roleControl.value,
       },
       {
         key: 'status',
         label: 'Status',
-        options: this.statuses.map((item) => ({ ...item, value: item.value })),
+        options: this.status,
         selectedValues: this.statusControl.value,
       },
     ];
@@ -136,13 +120,14 @@ export class UserList implements OnInit {
     }),
     columnHelper.accessor('role', {
       header: 'Role',
+      cell: (role) => RoleLabel[role.getValue()],
       sortFn: 'text',
     }),
     columnHelper.accessor('isActive', {
       header: 'Status',
       cell: (info) =>
         flexRenderComponent(StatusBadge, {
-          inputs: { dataBadge: userStatusBadges[String(info.getValue())] },
+          inputs: { dataBadge: userStatusBadges[info.getValue()] },
         }),
       sortFn: 'basic',
     }),
@@ -153,8 +138,7 @@ export class UserList implements OnInit {
         flexRenderComponent(UserActionsButton, {
           inputs: {
             user: info.row.original,
-            updateStatus: this.updateUserStatus,
-            updateRole: this.updateUserRole,
+            onUserUpdated: () => this.reloadUsers(),
           },
         }),
       enableSorting: false,
@@ -174,7 +158,9 @@ export class UserList implements OnInit {
     this._route.queryParamMap
       .pipe(
         map((params) => this.parseFilters(params)),
-        tap((filters) => this.syncFilterControls(filters)),
+        tap((filters) => {
+          this.syncFilterControls(filters);
+        }),
         switchMap((filters) => this.loadUsers(filters)),
         takeUntilDestroyed(this._destroyRef),
       )
@@ -205,34 +191,45 @@ export class UserList implements OnInit {
   private parseFilters(params: ParamMap): UserListFilters {
     return {
       search: params.get('search') ?? '',
-      roles: params
+      role: params
         .getAll('role')
         .filter((role): role is Role => role === Role.ADMIN || role === Role.USER),
-      statuses: params
+      status: params
         .getAll('status')
-        .filter((status): status is UserStatus => status === 'active' || status === 'inactive'),
+        .filter(
+          (status): status is UserStatus =>
+            status === UserStatus.ACTIVE || status === UserStatus.INACTIVE,
+        ),
     };
   }
 
   private syncFilterControls(filters: UserListFilters): void {
     this.searchControl.setValue(filters.search, { emitEvent: false });
-    this.roleControl.setValue(filters.roles, { emitEvent: false });
-    this.statusControl.setValue(filters.statuses, { emitEvent: false });
+    this.roleControl.setValue(filters.role, { emitEvent: false });
+    this.statusControl.setValue(filters.status, { emitEvent: false });
     this.table.setPageIndex(0);
   }
 
   private filtersFromControls(): UserListFilters {
     return {
       search: this.searchControl.value.trim(),
-      roles: this.roleControl.value,
-      statuses: this.statusControl.value,
+      role: this.roleControl.value,
+      status: this.statusControl.value,
     };
   }
 
   private loadUsers(filters: UserListFilters) {
+    this.loading.set(true);
     return this._userService.getUsers(filters).pipe(
       tap(({ data }) => this.data.set(data)),
+      finalize(() => this.loading.set(false)),
     );
+  }
+
+  private reloadUsers(): void {
+    this.loadUsers(this.filtersFromControls())
+      .pipe(takeUntilDestroyed(this._destroyRef))
+      .subscribe();
   }
 
   clearFilters(): void {
@@ -255,7 +252,7 @@ export class UserList implements OnInit {
 
       case 'status':
         this.statusControl.setValue(
-          this.statuses
+          this.status
             .filter((item) => change.selectedValues.includes(item.value))
             .map((item) => item.value),
           { emitEvent: false },
@@ -267,36 +264,5 @@ export class UserList implements OnInit {
     }
 
     this.updateSearchQueryParam();
-  }
-
-  private readonly updateUserStatus: UserStatusActionHandler = (userId, action) =>
-    this.updateUserAndReload(
-      this._userService.updateUserStatus(userId, action === 'activate'),
-      'User status updated',
-      'Unable to update user status',
-    );
-
-  private readonly updateUserRole: UserRoleAction = (userId, role) =>
-    this.updateUserAndReload(
-      this._userService.updateUserRole(userId, role),
-      'User role updated',
-      'Unable to update user role',
-    );
-
-  private updateUserAndReload(
-    update$: Observable<User>,
-    successMessage: string,
-    errorMessage: string,
-  ): Observable<User> {
-    return update$.pipe(
-      switchMap((updatedUser) =>
-        this.loadUsers(this.filtersFromControls()).pipe(map(() => updatedUser)),
-      ),
-      tap(() => toast.success(successMessage)),
-      catchError(() => {
-        toast.error(errorMessage);
-        return EMPTY;
-      }),
-    );
   }
 }

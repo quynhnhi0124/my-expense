@@ -5,5 +5,5 @@
       [searchPlaceholder]="'Search users by first name, last name, or email'" [filterGroups]="filterGroups"
       (filterChange)="onFilterChange($event)" (clear)="clearFilters()" />
   </div>
-  <app-common-table [table]="table" emptyMessage="No users found." />
+  <app-common-table [table]="table" [loading]="loading()" emptyMessage="No users found." />
 </div>

@@ -1,4 +1,4 @@
-import { Role } from '@features/users/models/user.enum';
+import { Role, UserStatus } from '@features/users/models/user.enum';
 
 export interface LoginRequest {
   email: string;
@@ -19,7 +19,7 @@ export interface LoginResponse {
     email: string;
     firstName: string;
     lastName: string;
-    isActive: boolean;
+    isActive: UserStatus;
     role: Role;
     createdAt: Date;
     updatedAt: Date;

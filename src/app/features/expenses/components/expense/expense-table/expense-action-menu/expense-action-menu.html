@@ -1,0 +1,14 @@
+<button hlmBtn type="button" size="icon-sm" variant="ghost" aria-label="Change expense status"
+  [hlmDropdownMenuTrigger]="menu">
+  <ng-icon name="lucideEllipsis" />
+</button>
+<ng-template #menu>
+  <hlm-dropdown-menu class="w-44">
+    <hlm-dropdown-menu-label>Change status</hlm-dropdown-menu-label>
+    @for (status of statuses; track status) {
+    <button hlmDropdownMenuItem [disabled]="status === expense().status" (click)="updateStatus()(expense().id, status)">
+      Set {{ expenseStatusLabel[status] }}
+    </button>
+    }
+  </hlm-dropdown-menu>
+</ng-template>
