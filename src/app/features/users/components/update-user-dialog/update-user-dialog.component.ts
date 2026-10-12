@@ -38,7 +38,7 @@ export class UpdateUserDialog {
   readonly isLoading = signal<boolean>(false);
 
   readonly userForm = new FormGroup({
-    isActive: new FormControl(''),
+    isActive: new FormControl(true),
     role: new FormControl(''),
   });
   readonly roleOptions = [
@@ -46,10 +46,10 @@ export class UpdateUserDialog {
     { value: Role.USER, label: RoleLabel[Role.USER] },
   ];
   readonly statusOptions = [
-    { value: UserStatus.ACTIVE, label: UserStatusLabel[UserStatus.ACTIVE] },
-    { value: UserStatus.INACTIVE, label: UserStatusLabel[UserStatus.INACTIVE] },
+    { value: true, label: UserStatusLabel[UserStatus.ACTIVE] },
+    { value: false, label: UserStatusLabel[UserStatus.INACTIVE] },
   ];
-  readonly statusToLabel = (value: UserStatus) => UserStatusLabel[value];
+  readonly statusToLabel = (value: boolean) => UserStatusLabel[value ? UserStatus.ACTIVE : UserStatus.INACTIVE];
   readonly roleToLabel = (value: Role) => RoleLabel[value];
 
   constructor() {

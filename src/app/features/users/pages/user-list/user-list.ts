@@ -127,7 +127,9 @@ export class UserList implements OnInit {
       header: 'Status',
       cell: (info) =>
         flexRenderComponent(StatusBadge, {
-          inputs: { dataBadge: userStatusBadges[info.getValue()] },
+          inputs: {
+            dataBadge: userStatusBadges[info.getValue() ? UserStatus.ACTIVE : UserStatus.INACTIVE],
+          },
         }),
       sortFn: 'basic',
     }),

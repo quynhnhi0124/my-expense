@@ -19,7 +19,7 @@ export interface LoginResponse {
     email: string;
     firstName: string;
     lastName: string;
-    isActive: UserStatus;
+    isActive: boolean;
     role: Role;
     createdAt: Date;
     updatedAt: Date;

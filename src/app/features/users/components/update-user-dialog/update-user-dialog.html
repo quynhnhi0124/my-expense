@@ -15,7 +15,7 @@
     } @else if(user(); as user) {
     <hlm-dialog-header>
       <h3 hlmDialogTitle>{{ user.firstName }} {{ user.lastName }}</h3>
-      <p hlmDialogDescription>User account details123</p>
+      <p hlmDialogDescription>User account details</p>
     </hlm-dialog-header>
     <form [formGroup]="userForm" (submit)="updateUser()" type="submit">
       <dl class="grid gap-3 py-2 text-sm">

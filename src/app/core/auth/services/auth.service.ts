@@ -5,7 +5,7 @@ import { MOCK_USERS } from '@features/users/data/users.data';
 import { User } from '@features/users/models/user.interface';
 import { delay, finalize, map, Observable, of, throwError } from 'rxjs';
 import { environment } from '../../../../../environment';
-import { Role, UserStatus } from '@features/users';
+import { Role } from '@features/users';
 
 @Injectable({
   providedIn: 'root',
@@ -22,7 +22,7 @@ export class AuthService {
         if (!user) {
           throw new Error('Invalid credentials');
         }
-        if (user.isActive === UserStatus.INACTIVE) {
+        if (user.isActive) {
           throw new Error('Your account has been deactivated. Contact an administrator.');
         }
         const { password: pwd, ...userInfo } = user;
@@ -55,7 +55,7 @@ export class AuthService {
       email,
       password: input.password,
       role: Role.USER,
-      isActive: UserStatus.ACTIVE,
+      isActive: true,
       createdAt: now,
       updatedAt: now,
     };

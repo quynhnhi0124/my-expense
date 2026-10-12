@@ -1,4 +1,4 @@
-import { Role, UserStatus } from "../models/user.enum";
+import { Role } from "../models/user.enum";
 import { User } from "../models/user.interface";
 
 export const MOCK_USERS: User[] = [
@@ -9,7 +9,7 @@ export const MOCK_USERS: User[] = [
     email: 'emily.johnson@x.dummyjson.com',
     password: 'emilyspass',
     role: Role.ADMIN,
-    isActive: UserStatus.ACTIVE,
+    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -20,7 +20,7 @@ export const MOCK_USERS: User[] = [
     email: 'user.emma@x.dummyjson.com',
     password: 'emilyspass',
     role: Role.USER,
-    isActive: UserStatus.ACTIVE,
+    isActive: true,
     createdAt: new Date(),
     updatedAt: new Date(),
   },
@@ -31,7 +31,7 @@ export const MOCK_USERS: User[] = [
     email: 'inactive.user@x.dummyjson.com',
     password: 'inactivepass',
     role: Role.USER,
-    isActive: UserStatus.INACTIVE,
+    isActive: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   },

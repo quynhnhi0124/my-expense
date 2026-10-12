@@ -40,8 +40,7 @@ export class UserService {
         );
 
       const matchesRole = role.length === 0 || role.includes(user.role);
-      const userStatus = (user.isActive ? 'true' : 'false') as UserStatus;
-      const matchesStatus = status.length === 0 || status.includes(userStatus);
+      const matchesStatus = status.length === 0 || status.includes(user.isActive ? UserStatus.ACTIVE : UserStatus.INACTIVE);
 
       return matchesSearch && matchesRole && matchesStatus;
     });
