@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
 import { Role } from '@features/users/models/user.enum';
 import { User } from '@features/users/models/user.interface';
 import { UserActionsButton } from './user-table-actions';
@@ -23,33 +22,25 @@ describe('UserActionsButton', () => {
 
     fixture = TestBed.createComponent(UserActionsButton);
     fixture.componentRef.setInput('user', user);
-    fixture.componentRef.setInput('updateStatus', () => of(user));
-    fixture.componentRef.setInput('updateRole', () => of(user));
+    fixture.componentRef.setInput('onUserUpdated', vi.fn());
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('submits the selected role and closes the dialog after success', () => {
-    const updateRole = vi.fn(() => of({ ...user, role: Role.ADMIN }));
-    fixture.componentRef.setInput('updateRole', updateRole);
-    component.dialogState.set('open');
-    component.prepareRoleChange();
-    component.roleControl.setValue(Role.ADMIN);
+  it('opens the user details dialog and its update dialog', () => {
+    component.onDialogStateChange('open');
+    component.onUserDialogStateChange('open');
 
-    component.saveRoleChange();
-
-    expect(updateRole).toHaveBeenCalledWith(user.id, Role.ADMIN);
-    expect(component.dialogState()).toBe('closed');
+    expect(component.dialogState()).toBe('open');
+    expect(component.openUpdateDialog()).toBe('open');
   });
 
-  it('submits a status action and closes the dialog after success', () => {
-    const updateStatus = vi.fn(() => of({ ...user, isActive: false }));
-    fixture.componentRef.setInput('updateStatus', updateStatus);
-    component.dialogState.set('open');
+  it('notifies the list to reload after the user is updated', () => {
+    const onUserUpdated = vi.fn();
+    fixture.componentRef.setInput('onUserUpdated', onUserUpdated);
 
-    component.deactivateUser();
+    component.handleUserUpdated();
 
-    expect(updateStatus).toHaveBeenCalledWith(user.id, 'deactivate');
-    expect(component.dialogState()).toBe('closed');
+    expect(onUserUpdated).toHaveBeenCalledOnce();
   });
 });

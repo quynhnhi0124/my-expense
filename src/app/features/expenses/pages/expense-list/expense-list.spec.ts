@@ -36,6 +36,10 @@ describe('ExpenseList', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
     await fixture.whenStable();
+    await vi.waitFor(() => {
+      expect(component.data().length).toBeGreaterThan(0);
+      expect(component.categoryOptions().length).toBeGreaterThan(0);
+    }, { timeout: 2500 });
   });
 
   it('preserves dynamic category IDs and restricts all view to admins', () => {

@@ -1,5 +1,4 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { HttpResponse } from '@angular/common/http';
 import { Router, provideRouter } from '@angular/router';
 import { AuthService } from '@core/auth/services/auth.service';
 import { LoginResponse } from '@features/auth/models/auth.model';
@@ -50,7 +49,7 @@ describe('Login', () => {
         updatedAt: new Date(),
       },
     };
-    authService.login.mockReturnValue(of(new HttpResponse({ status: 201, body: response })));
+    authService.login.mockReturnValue(of(response));
     const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
     component.loginForm.setValue({ email: 'user@example.test', password: 'Securepass1' });
 
@@ -61,6 +60,6 @@ describe('Login', () => {
       password: 'Securepass1',
     });
     expect(authService.setSession).toHaveBeenCalledWith(response);
-    expect(navigate).toHaveBeenCalledWith(['/users']);
+    expect(navigate).toHaveBeenCalledWith(['dashboard']);
   });
 });

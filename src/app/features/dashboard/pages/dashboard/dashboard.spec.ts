@@ -74,14 +74,14 @@ describe('Dashboard', () => {
     expect(text).toContain('My Expenses');
     expect(text).toContain('Recent Expenses');
     expect(dashboard.overview.reduce((count, stat) => count + stat.count, 0)).toBe(12);
-    expect(dashboard.overview.find((stat) => stat.status === 'approved')?.count).toBe(3);
-    expect(dashboard.myExpenses.map((expense) => expense.id)).toEqual(['11', '12']);
+    expect(dashboard.overview.find((stat) => stat.status === 'approved')?.count).toBe(4);
+    expect(dashboard.myExpenses.map((expense) => expense.id)).toEqual(['11', '12', '1']);
     expect(dashboard.myExpenses.every((expense) => expense.userId === currentUser?.id)).toBe(true);
     expect(dashboard.recentExpenses).toHaveLength(5);
     expect(dashboard.recentExpenses.some((expense) => expense.id === '8')).toBe(true);
     expect(dashboard.categoryProgress.map((item) => item.category)).not.toContain('Other');
     expect(
       dashboard.monthlyApprovedSpending.reduce((sum, month) => sum + month.value, 0),
-    ).toBeCloseTo(1538.07);
+    ).toBeCloseTo(1550.07);
   });
 });

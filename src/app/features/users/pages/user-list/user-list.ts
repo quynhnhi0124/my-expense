@@ -18,7 +18,7 @@ import {
 } from '@tanstack/angular-table';
 import { User } from '@features/users/models/user.interface';
 import { UserService } from '@features/users/services/user.service';
-import { UserActionsButton } from '@features/users/components/user-table-actions/user-table-actions.component';
+import { UserActionsButton } from '@features/users/components/user-table-actions/user-table-actions';
 import { debounceTime, distinctUntilChanged, finalize, map, switchMap, tap } from 'rxjs';
 import { Role, RoleLabel, UserStatus, UserStatusLabel } from '@features/users/models/user.enum';
 import { CommonTable } from '@shared/components/table/table-data/common-table.component';

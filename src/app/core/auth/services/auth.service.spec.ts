@@ -14,10 +14,10 @@ describe('AuthService', () => {
 
   it('authenticates case-insensitive email and excludes password from the response', async () => {
     const response = await firstValueFrom(
-      service.login({ email: '  USER.EMMA@X.DUMMYJSON.COM ', password: 'emilyspass' }),
+      service.login({ email: '  ADMIN@GMAIL.COM ', password: 'Admin123' }),
     );
 
-    expect(response.user.role).toBe(Role.USER);
+    expect(response.user.role).toBe(Role.ADMIN);
     expect('password' in response.user).toBe(false);
   });
 
@@ -27,7 +27,7 @@ describe('AuthService', () => {
     ).rejects.toThrow('Invalid credentials');
     await expect(
       firstValueFrom(
-        service.login({ email: 'inactive.user@x.dummyjson.com', password: 'inactivepass' }),
+        service.login({ email: 'robyn_konopelski@gmail.com', password: 'Yzd6ombsYYOqGhE' }),
       ),
     ).rejects.toThrow('Your account has been deactivated. Contact an administrator.');
   });

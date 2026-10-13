@@ -16,6 +16,7 @@ describe('ExpenseCategoryList', () => {
     component = fixture.componentInstance;
     fixture.detectChanges();
     await fixture.whenStable();
+    await vi.waitFor(() => expect(component.data().length).toBeGreaterThan(0), { timeout: 2500 });
   });
 
   it('loads categories and syncs status filter selections', () => {
