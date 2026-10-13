@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '@core/auth/services/auth.service';
+import { RoutePath } from '@core/routing/routes';
 import { toast } from '@spartan-ng/brain/sonner';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
@@ -54,7 +55,7 @@ export class Login {
         next: (res) => {
           toast.success('Successfully logged in');
           this.authService.setSession(res);
-          void this.router.navigate(['/users']); //Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator
+          void this.router.navigate([RoutePath.dashboard]); //Promises must be awaited, end with a call to .catch, end with a call to .then with a rejection handler or be explicitly marked as ignored with the `void` operator
         },
         error: (error: unknown) => {
           toast.error(error instanceof Error ? error.message : 'Failed to login');

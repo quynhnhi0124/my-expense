@@ -1,24 +1,18 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
-import { map, Observable} from 'rxjs';
+import { Injectable } from '@angular/core';
+import { delay, map, Observable, of, throwError } from 'rxjs';
 import { ApiGetListResponse, SearchParams } from '@shared/interfaces';
 import { User } from '@features/users/models/user.interface';
 import { Role, UserStatus } from '../models/user.enum';
-import { environment } from '../../../../../environment';
+import { MOCK_USERS } from '../data/users.data';
 
 @Injectable({
   providedIn: 'root',
 })
 export class UserService {
-  private readonly _http = inject(HttpClient);
-
   public getUsers(
     params: SearchParams & { role?: Role[]; status?: UserStatus[] },
   ): Observable<ApiGetListResponse<User>> {
-    let httpParams = new HttpParams();
-    return this._http
-      .get<User[]>(`${environment.baseURL}/users`, { params: httpParams })
-      .pipe(map((users) => this.handleUserData(users, params)));
+    return of(MOCK_USERS).pipe(delay(1000), map((users) => this.handleUserData(users, params)));
   }
 
   private handleUserData(
@@ -46,19 +40,30 @@ export class UserService {
     });
     const res: ApiGetListResponse<User> = {
       data: users,
-      rowCount: data.length,
+      rowCount: users.length,
       skip: 0,
-      limit: Number(limit || page),
+      limit: Number(limit),
     };
 
     return res;
   }
 
   getUserDetail(id: string): Observable<User> {
-    return this._http.get<User>(`${environment.baseURL}/users/${id}`);
+    const user = MOCK_USERS.find((item) => item.id === id);
+    if (!user) {
+      return throwError(() => new Error('User was not found.'));
+    }
+
+    return of({ ...user }).pipe(delay(1000));
   }
 
-  updateUser(id: string, data: any) {
-    return this._http.put<User>(`${environment.baseURL}/users/${id}`, data)
+  updateUser(id: string, data: Partial<Pick<User, 'role' | 'isActive'>>): Observable<User> {
+    const user = MOCK_USERS.find((item) => item.id === id);
+    if (!user) {
+      return throwError(() => new Error('User was not found.'));
+    }
+
+    Object.assign(user, data, { updatedAt: new Date() });
+    return of({ ...user }).pipe(delay(1000));
   }
 }

@@ -1,23 +1,37 @@
 import { TestBed } from '@angular/core/testing';
 import { AuthService } from '@core/auth/services/auth.service';
-import { MOCK_EXPENSES } from '../data/expense.data';
-import { Expense } from '../models/expense.interface';
+import { MOCK_EXPENSE } from '../data/expense-mock.data';
+import { Expense, ExpenseStatus } from '../models/expense.types';
 import { Role } from '../../users/models/user.enum';
 import { ExpenseService } from './expense.service';
 import { firstValueFrom } from 'rxjs';
 
 describe('ExpenseService', () => {
-  const initialExpenses = MOCK_EXPENSES.map((expense) => ({ ...expense }));
-  let currentUser: { id: string; firstName: string; lastName: string; role: Role };
+  const initialExpenses = MOCK_EXPENSE.map((expense) => ({ ...expense }));
+  let currentUser: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    isActive: boolean;
+    role: Role;
+  };
   let service: ExpenseService;
 
   beforeEach(() => {
-    MOCK_EXPENSES.splice(
+    MOCK_EXPENSE.splice(
       0,
-      MOCK_EXPENSES.length,
+      MOCK_EXPENSE.length,
       ...initialExpenses.map((expense) => ({ ...expense })),
     );
-    currentUser = { id: '2', firstName: 'Emma', lastName: 'User', role: Role.USER };
+    currentUser = {
+      id: '2',
+      firstName: 'Emma',
+      lastName: 'User',
+      email: 'user@gmail.com',
+      isActive: true,
+      role: Role.USER,
+    };
     TestBed.configureTestingModule({
       providers: [
         ExpenseService,
@@ -28,9 +42,9 @@ describe('ExpenseService', () => {
   });
 
   it('restricts mine scope to the current user and searches expense fields', async () => {
-    const result = await firstValueFrom(service.getExpenses({ scope: 'mine', search: 'coffee' }));
+    const result = await firstValueFrom(service.getExpenses({ scope: 'mine', search: 'office supplies' }));
 
-    expect(result.data.map((expense) => expense.id)).toEqual([9]);
+    expect(result.data.map((expense) => expense.id)).toEqual(['2']);
     expect(result.data.every((expense) => expense.userId === currentUser.id)).toBe(true);
   });
 
@@ -38,31 +52,38 @@ describe('ExpenseService', () => {
     const result = await firstValueFrom(
       service.getExpenses({
         scope: 'mine',
-        expenseDates: [new Date(2026, 8, 8)],
-        statuses: ['rejected'],
-        categories: ['food'],
+        expenseDates: [new Date('2026-09-25T00:00:00')],
+        statuses: [ExpenseStatus.DRAFT],
+        categories: ['5'],
       }),
     );
 
-    expect(result.data.map((expense) => expense.id)).toEqual([9]);
+    expect(result.data.map((expense) => expense.id)).toEqual(['2']);
   });
 
-  it('allows admins to list all users expenses', async () => {
-    currentUser = { id: '1', firstName: 'Emily', lastName: 'Johnson', role: Role.ADMIN };
+  it('lists active users expenses from active categories for admins', async () => {
+    currentUser = {
+      id: '1',
+      firstName: 'Emily',
+      lastName: 'Johnson',
+      email: 'admin@gmail.com',
+      isActive: true,
+      role: Role.ADMIN,
+    };
 
     const result = await firstValueFrom(service.getExpenses({ scope: 'all' }));
 
-    expect(result.data).toHaveLength(initialExpenses.length);
+    expect(result.data.map((expense) => expense.id)).toEqual(['2', '11', '12']);
   });
 
-  it('creates an expense for the current user with pending status', async () => {
+  it('creates a draft expense for the current user', async () => {
     const created = await firstValueFrom(
       service.createExpense({
         title: '  New expense  ',
         description: '  Receipt  ',
         amount: 25,
         currency: 'USD',
-        category: 'food',
+        category: '1',
         expenseDate: new Date(2026, 8, 28),
       }),
     );
@@ -70,17 +91,24 @@ describe('ExpenseService', () => {
     expect(created.title).toBe('New expense');
     expect(created.description).toBe('Receipt');
     expect(created.userId).toBe(currentUser.id);
-    expect(created.status).toBe('pending');
-    expect(MOCK_EXPENSES[0].id).toBe(created.id);
+    expect(created.status).toBe(ExpenseStatus.DRAFT);
+    expect(MOCK_EXPENSE[0].id).toBe(created.id);
   });
 
   it('only lets admins update expense status', async () => {
     await expect(
-      firstValueFrom(service.updateExpenseStatus(2, 'approved')),
+      firstValueFrom(service.updateExpenseStatus('2', ExpenseStatus.APPROVED)),
     ).rejects.toThrow('Only administrators can update expense status.');
 
-    currentUser = { id: '1', firstName: 'Emily', lastName: 'Johnson', role: Role.ADMIN };
-    const updated: Expense = await firstValueFrom(service.updateExpenseStatus(2, 'approved'));
+    currentUser = {
+      id: '1',
+      firstName: 'Emily',
+      lastName: 'Johnson',
+      email: 'admin@gmail.com',
+      isActive: true,
+      role: Role.ADMIN,
+    };
+    const updated: Expense = await firstValueFrom(service.updateExpenseStatus('2', ExpenseStatus.APPROVED));
 
     expect(updated.status).toBe('approved');
   });

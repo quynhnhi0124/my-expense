@@ -23,6 +23,7 @@
     "@angular/ssr": "^22.0.3",
     "@ng-icons/core": "^32.2.0",
     "@ng-icons/lucide": "^32.2.0",
+    "@ngrx/signals": "^22.0.1",
     "@spartan-ng/brain": "^1.5.0",
     "@tanstack/angular-charts": "0.16.0",
     "@tanstack/angular-table": "^9.2.4",

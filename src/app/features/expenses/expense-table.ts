@@ -13,7 +13,7 @@ import {
   StatusBadge,
   StatusBadgeProps,
 } from '@shared/components/status-badge/status-badge.component';
-import { Expense, ExpenseStatus, ExpenseStatusLabel } from './models/expense.interface';
+import { Expense, ExpenseStatus, ExpenseStatusLabel } from './models/expense.types';
 
 export const expenseTableFeatures = tableFeatures({
   rowSortingFeature,

@@ -4,7 +4,26 @@ import {
   createExpenseColumns,
   expenseColumnHelper,
 } from '../../expense-table';
-import { Expense, ExpenseStatusChangeHandler } from '../../models/expense.interface';
+import { Expense, ExpenseStatusChangeHandler } from '../../models/expense.types';
+
+function createActionsColumn(updateStatus: ExpenseStatusChangeHandler) {
+  return expenseColumnHelper.display({
+    id: 'actions',
+    header: 'Actions',
+    cell: (info) =>
+      flexRenderComponent(ExpenseActionsMenu, {
+        inputs: { expense: info.row.original, updateStatus },
+      }),
+    enableSorting: false,
+  });
+}
+
+export function createMyExpenseColumns(
+  personalColumns: ReturnType<typeof createExpenseColumns>,
+  updateStatus: ExpenseStatusChangeHandler,
+) {
+  return expenseColumnHelper.columns([...personalColumns, createActionsColumn(updateStatus)]);
+}
 
 export function createAllExpenseColumns(
   personalColumns: ReturnType<typeof createExpenseColumns>,
@@ -17,14 +36,6 @@ export function createAllExpenseColumns(
       sortFn: 'text',
     }),
     ...personalColumns,
-    expenseColumnHelper.display({
-      id: 'actions',
-      header: 'Actions',
-      cell: (info) =>
-        flexRenderComponent(ExpenseActionsMenu, {
-          inputs: { expense: info.row.original, updateStatus },
-        }),
-      enableSorting: false,
-    }),
+    createActionsColumn(updateStatus),
   ]);
 }

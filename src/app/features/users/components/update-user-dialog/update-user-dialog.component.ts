@@ -38,8 +38,8 @@ export class UpdateUserDialog {
   readonly isLoading = signal<boolean>(false);
 
   readonly userForm = new FormGroup({
-    isActive: new FormControl(true),
-    role: new FormControl(''),
+    isActive: new FormControl(true, { nonNullable: true }),
+    role: new FormControl<Role>(Role.USER, { nonNullable: true }),
   });
   readonly roleOptions = [
     { value: Role.ADMIN, label: RoleLabel[Role.ADMIN] },

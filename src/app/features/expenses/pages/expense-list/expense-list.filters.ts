@@ -1,21 +1,7 @@
 import { ParamMap } from '@angular/router';
 import { FilterItem } from '@shared/interfaces/data.interface';
 import { parseDates } from '@shared/utils';
-import {
-  ExpenseCategoryType,
-  ExpenseStatus,
-  ExpenseStatusLabel,
-} from '../../models/expense.interface';
-import { ExpenseScope } from '../../services/expense.service';
-
-export const EXPENSE_CATEGORIES: ExpenseCategoryType[] = [
-  'food',
-  'transportation',
-  'accommodation',
-  'entertainment',
-  'office',
-  'other',
-];
+import { ExpenseScope, ExpenseStatus, ExpenseStatusLabel } from '@features/expenses/models';
 
 export const EXPENSE_STATUS_OPTIONS: FilterItem<ExpenseStatus>[] = Object.values(ExpenseStatus).map(
   (status) => ({
@@ -29,7 +15,7 @@ export interface ExpenseListRouteFilters {
   view: ExpenseScope;
   search: string;
   expenseDates: Date[];
-  categories: ExpenseCategoryType[];
+  categories: string[];
   statuses: ExpenseStatus[];
 }
 
@@ -41,11 +27,7 @@ export function parseExpenseListRouteFilters(
     view: isAdmin && params.get('view') === 'all' ? 'all' : 'mine',
     search: params.get('search') ?? '',
     expenseDates: parseDates(params.getAll('expenseDates')),
-    categories: params
-      .getAll('categories')
-      .filter((category): category is ExpenseCategoryType =>
-        EXPENSE_CATEGORIES.includes(category as ExpenseCategoryType),
-      ),
+    categories: params.getAll('categories'),
     statuses: params
       .getAll('statuses')
       .filter((status): status is ExpenseStatus =>

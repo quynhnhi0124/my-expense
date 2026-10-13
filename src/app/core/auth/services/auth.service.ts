@@ -1,10 +1,8 @@
-import { HttpClient } from '@angular/common/http';
-import { inject, Injectable } from '@angular/core';
+import { Injectable } from '@angular/core';
 import { LoginRequest, LoginResponse, SignupRequest } from '@features/auth/models/auth.model';
 import { MOCK_USERS } from '@features/users/data/users.data';
 import { User } from '@features/users/models/user.interface';
 import { delay, finalize, map, Observable, of, throwError } from 'rxjs';
-import { environment } from '../../../../../environment';
 import { Role } from '@features/users';
 
 @Injectable({
@@ -13,19 +11,21 @@ import { Role } from '@features/users';
 export class AuthService {
   private readonly accessTokenKey = 'access_token';
   private readonly currentUserKey = 'currentUser';
-  private readonly endpoint = `${environment.baseURL}/users`;
-  private readonly httpClient = inject(HttpClient);
   login({ email, password }: LoginRequest): Observable<LoginResponse> {
-    return this.httpClient.get<User[]>(this.endpoint).pipe(
+    const normalizedEmail = email.trim().toLowerCase();
+    return of(MOCK_USERS).pipe(
+      delay(1000),
       map((users) => {
-        const user = users.find((user) => user.email === email && user.password === password);
+        const user = users.find(
+          (item) => item.email.toLowerCase() === normalizedEmail && item.password === password,
+        );
         if (!user) {
           throw new Error('Invalid credentials');
         }
-        if (user.isActive) {
+        if (!user.isActive) {
           throw new Error('Your account has been deactivated. Contact an administrator.');
         }
-        const { password: pwd, ...userInfo } = user;
+        const { password: _password, ...userInfo } = user;
         return {
           accessToken: `mock-access-token-user-${user.id}`,
           user: userInfo,
@@ -62,7 +62,7 @@ export class AuthService {
 
     MOCK_USERS.unshift(user);
     const { password, ...userInfo } = user;
-    return of(userInfo);
+    return of(userInfo).pipe(delay(1000));
   }
 
   getAccessToken(): string | null | void {

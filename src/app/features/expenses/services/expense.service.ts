@@ -1,63 +1,43 @@
 import { Injectable, inject } from '@angular/core';
 import { AuthService } from '@core/auth/services/auth.service';
-import { ApiGetListResponse, SearchParams } from '@shared/interfaces';
-import { map, Observable, of, throwError } from 'rxjs';
+import { ApiGetListResponse } from '@shared/interfaces';
+import { delay, Observable, of, throwError } from 'rxjs';
 import { Role } from '../../users/models/user.enum';
 import {
+  CreateExpenseInput,
   Expense,
-  ExpenseCategoryType,
+  ExpenseMock,
+  ExpenseQuery,
   ExpenseStatus,
-} from '../models/expense.interface';
-import { MOCK_EXPENSES } from '../data/expense.data';
-import { HttpClient } from '@angular/common/http';
-import { environment } from '../../../../../environment';
-
-export type ExpenseScope = 'mine' | 'all';
-
-export interface ExpenseQuery extends SearchParams {
-  expenseDates?: Date[];
-  statuses?: ExpenseStatus[];
-  categories?: ExpenseCategoryType[];
-  scope?: ExpenseScope;
-}
-
-export interface CreateExpenseInput {
-  title: string;
-  description?: string;
-  amount: number;
-  currency: Expense['currency'];
-  category: ExpenseCategoryType;
-  expenseDate: Date;
-}
-
-interface CreateExpensePayload {
-  title: string;
-  description: string;
-  amount: string;
-  currency: Expense['currency'];
-  category: ExpenseCategoryType;
-  expenseDate: string;
-  status: ExpenseStatus.DRAFT;
-  createdAt: string;
-  updatedAt: string;
-  user: { email: string };
-  userId: string;
-}
+  toExpense,
+} from '@features/expenses/models';
+import { MOCK_EXPENSE } from '../data/expense-mock.data';
+import { MOCK_EXPENSE_CATEGORIES } from '@features/expense-categories/data/expense-categories.data';
 
 @Injectable({ providedIn: 'root' })
 export class ExpenseService {
   private readonly _authService = inject(AuthService);
-  private readonly _http = inject(HttpClient);
 
   getExpenses(params: ExpenseQuery): Observable<ApiGetListResponse<Expense>> {
     const currentUser = this._authService.getCurrentUser();
+    if (!currentUser) {
+      return throwError(() => new Error('You must be signed in to view expenses.'));
+    }
+
     const canViewAll = currentUser?.role === Role.ADMIN && params.scope === 'all';
-    const url = canViewAll
-      ? `${environment.baseURL}/expenses`
-      : `${environment.baseURL}/users/${currentUser?.id}/expenses`;
-    return this._http
-      .get<Expense[]>(url)
-      .pipe(map((expenses) => this.handleExpenseData(expenses, canViewAll, params)));
+    const activeCategoryIds = new Set(
+      MOCK_EXPENSE_CATEGORIES.filter((category) => category.isActive).map((category) => category.id),
+    );
+    const eligibleExpenses = MOCK_EXPENSE.filter(
+      (expense) =>
+        activeCategoryIds.has(expense.category.id) && (!canViewAll || expense.user.isActive),
+    );
+    const expenses = canViewAll
+      ? eligibleExpenses
+      : eligibleExpenses.filter((expense) => expense.userId === currentUser.id);
+    return of(this.handleExpenseData(expenses.map(toExpense), canViewAll, params)).pipe(
+      delay(1000),
+    );
   }
 
   handleExpenseData(
@@ -79,6 +59,7 @@ export class ExpenseService {
         expense.title,
         expense.description ?? '',
         expense.category,
+        MOCK_EXPENSE_CATEGORIES.find((category) => category.id === expense.category)?.name ?? '',
         expense.status,
         ...(canViewAll ? [expense.user.email] : []),
       ];
@@ -101,19 +82,19 @@ export class ExpenseService {
     };
   }
 
-  updateExpenseStatus(id: number, status: ExpenseStatus): Observable<Expense> {
+  updateExpenseStatus(id: string, status: ExpenseStatus): Observable<Expense> {
     if (this._authService.getCurrentUser()?.role !== Role.ADMIN) {
       return throwError(() => new Error('Only administrators can update expense status.'));
     }
 
-    const expense = MOCK_EXPENSES.find((item) => item.id === id);
+    const expense = MOCK_EXPENSE.find((item) => item.id === id);
     if (!expense) {
       return throwError(() => new Error('Expense was not found.'));
     }
 
     expense.status = status;
     expense.updatedAt = new Date();
-    return of(expense);
+    return of(toExpense(expense)).pipe(delay(1000));
   }
 
   createExpense(input: CreateExpenseInput): Observable<Expense> {
@@ -122,22 +103,39 @@ export class ExpenseService {
       return throwError(() => new Error('You must be signed in to create an expense.'));
     }
 
-    const now = new Date().toISOString();
-    const payload: CreateExpensePayload = {
+    const category = MOCK_EXPENSE_CATEGORIES.find(
+      (item) => item.id === input.category && item.isActive,
+    );
+    if (!category) {
+      return throwError(() => new Error('An active expense category is required.'));
+    }
+
+    const now = new Date();
+    const expense: ExpenseMock = {
+      id: String(Math.max(0, ...MOCK_EXPENSE.map((item) => Number(item.id) || 0)) + 1),
+      userId: user.id,
       title: input.title.trim(),
-      description: input.description?.trim() ?? '',
-      amount: input.amount.toFixed(2),
+      description: input.description?.trim() || undefined,
+      amount: input.amount,
       currency: input.currency,
-      category: input.category,
-      expenseDate: input.expenseDate.toISOString(),
+      category: {
+        id: category.id,
+        name: category.name,
+        isActive: category.isActive,
+      },
+      expenseDate: input.expenseDate,
       status: ExpenseStatus.DRAFT,
       createdAt: now,
       updatedAt: now,
-      user: { email: user.email },
-      userId: user.id,
+      user: {
+        id: user.id,
+        email: user.email,
+        isActive: user.isActive,
+      },
     };
 
-    return this._http.post<Expense>(`${environment.baseURL}/expenses`, payload);
+    MOCK_EXPENSE.unshift(expense);
+    return of(toExpense(expense)).pipe(delay(1000));
   }
 
   private toDateKey(date: Date): string {

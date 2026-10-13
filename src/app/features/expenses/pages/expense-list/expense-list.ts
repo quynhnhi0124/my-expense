@@ -6,35 +6,27 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmTabsImports } from '@spartan-ng/helm/tabs';
 import { injectTable, isFunction, SortingState } from '@tanstack/angular-table';
-import { debounceTime, distinctUntilChanged, map, switchMap, tap } from 'rxjs';
+import { debounceTime, distinctUntilChanged, finalize, map, switchMap, tap } from 'rxjs';
 import { toast } from '@spartan-ng/brain/sonner';
 import { AuthService } from '@core/auth/services/auth.service';
 import { Role } from '@features/users/models/user.enum';
-import {
-  Expense,
-  ExpenseCategoryType,
-  ExpenseStatus,
-  ExpenseStatusChangeHandler,
-} from '../../models/expense.interface';
-import { ExpenseScope, ExpenseService } from '../../services/expense.service';
-import { ExpenseCategoryService } from '../../services/expense-category.service';
-import { ExpenseCategory } from '../../models/expense-category.interface';
+import { ExpenseService } from '../../services/expense.service';
 import { CommonTable } from '@shared/components/table/table-data/common-table.component';
 import { TableDataHeader } from '@shared/components/table/table-data-header/table-data-header.component';
 import { TableDataToolbar } from '@shared/components/table/table-data-toolbar/table-data-toolbar.component';
-import { CreateExpenseDialog } from '../../components/expense/create-expense-dialog/create-expense-dialog.component';
+import { CreateExpenseDialog } from '../../components/create-expense-dialog/create-expense-dialog.component';
 import { FilterItem, TableFilterChange, TableFilterGroup } from '@shared/interfaces/data.interface';
 import { parseDates, toDateKey, updateTableFilterQueryParams } from '@shared/utils';
+import { createExpenseColumns, expenseTableFeatures } from '../../expense-table';
+import { createAllExpenseColumns, createMyExpenseColumns } from './expense-list.columns';
 import {
-  createExpenseColumns,
-  expenseTableFeatures,
-} from '../../expense-table';
-import { createAllExpenseColumns } from './expense-list.columns';
-import {
-  EXPENSE_CATEGORIES,
   EXPENSE_STATUS_OPTIONS,
   parseExpenseListRouteFilters,
 } from './expense-list.filters';
+import { BrnDialogState } from '@spartan-ng/brain/dialog';
+import { ExpenseScope, ExpenseStatus, ExpenseStatusChangeHandler } from '@features/expenses/models';
+import { ExpenseCategoryStore } from '@features/expense-categories/data/store/expense-categories.store';
+import { ExpenseStore } from '@features/expenses/data/store/expense.store';
 @Component({
   imports: [
     CommonTable,
@@ -51,35 +43,38 @@ import {
 })
 export class ExpenseList implements OnInit {
   private readonly _expenseService = inject(ExpenseService);
-  private readonly _categoryService = inject(ExpenseCategoryService);
+  private readonly _expenseStore = inject(ExpenseStore);
+  private readonly _categoryStore = inject(ExpenseCategoryStore);
   private readonly _authService = inject(AuthService);
   private readonly _route = inject(ActivatedRoute);
   private readonly _router = inject(Router);
   private readonly _destroyRef = inject(DestroyRef);
   readonly isAdmin = this._authService.getCurrentUser()?.role === Role.ADMIN;
   readonly searchControl = new FormControl('', { nonNullable: true });
+  readonly loading = signal<boolean>(false);
   readonly activeView = signal<ExpenseScope>('mine');
-  readonly createDialogState = signal<'open' | 'closed'>('closed');
-  readonly availableCategories = signal<ExpenseCategory[]>([]);
-  readonly categoryOptions = computed<FilterItem<ExpenseCategoryType>[]>(() =>
-    this.availableCategories().flatMap((category) => {
-      const value = this.toExpenseCategoryType(category.name);
-      return value ? [{ id: value, value, label: category.name }] : [];
-    }),
+  readonly createDialogState = signal<BrnDialogState>('closed');
+  readonly categoryOptions = computed<FilterItem<string>[]>(() =>
+    this._categoryStore.activeCategories().map((category) => ({
+      id: category.id,
+      value: category.id,
+      label: category.name,
+    })),
   );
   readonly filters = {
     mine: {
       dates: signal<Date[]>([]),
-      categories: signal<ExpenseCategoryType[]>([]),
+      categories: signal<string[]>([]),
+      statuses: signal<ExpenseStatus[]>([]),
     },
     all: {
       dates: signal<Date[]>([]),
-      categories: signal<ExpenseCategoryType[]>([]),
+      categories: signal<string[]>([]),
       statuses: signal<ExpenseStatus[]>([]),
     },
   };
   readonly statuses = EXPENSE_STATUS_OPTIONS;
-  readonly data = signal<Expense[]>([]);
+  readonly data = this._expenseStore.expenses;
   private readonly sorting = signal<SortingState>([]);
 
   get personalFilterGroups(): TableFilterGroup[] {
@@ -90,6 +85,7 @@ export class ExpenseList implements OnInit {
         type: 'date',
         selectedValues: this.filters.mine.dates().map((date) => toDateKey(date)),
       },
+      ...(this.isAdmin ? [this.createStatusFilterGroup(this.filters.mine.statuses())] : []),
       this.createCategoryFilterGroup(this.filters.mine.categories()),
     ];
   }
@@ -102,18 +98,22 @@ export class ExpenseList implements OnInit {
         type: 'date',
         selectedValues: this.filters.all.dates().map((date) => toDateKey(date)),
       },
-      {
-        key: 'status',
-        label: 'Status',
-        type: 'checkbox',
-        options: this.statuses,
-        selectedValues: this.filters.all.statuses(),
-      },
+      this.createStatusFilterGroup(this.filters.all.statuses()),
       this.createCategoryFilterGroup(this.filters.all.categories()),
     ];
   }
 
-  private createCategoryFilterGroup(selectedCategories: ExpenseCategoryType[]): TableFilterGroup {
+  private createStatusFilterGroup(selectedStatuses: ExpenseStatus[]): TableFilterGroup {
+    return {
+      key: 'status',
+      label: 'Status',
+      type: 'checkbox',
+      options: this.statuses,
+      selectedValues: selectedStatuses,
+    };
+  }
+
+  private createCategoryFilterGroup(selectedCategories: string[]): TableFilterGroup {
     return {
       key: 'category',
       label: 'Category',
@@ -129,11 +129,7 @@ export class ExpenseList implements OnInit {
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
         next: (updatedExpense) => {
-          this.data.update((expenses) =>
-            expenses.map((expense) =>
-              expense.id === updatedExpense.id ? updatedExpense : expense,
-            ),
-          );
+          this._expenseStore.updateExpense(updatedExpense);
           toast.success('Expense status updated');
         },
         error: () => toast.error('Unable to update expense status'),
@@ -143,7 +139,9 @@ export class ExpenseList implements OnInit {
   private readonly personalColumns = createExpenseColumns({
     titleHeader: 'Expense',
     dateHeader: 'Expense date',
-    formatCategory: (category) => this.formatLabel(category),
+    formatCategory: (category) =>
+      this._categoryStore.categories().find((item) => item.id === category)?.name ??
+      this.formatLabel(category),
     formatAmount: (expense) =>
       new Intl.NumberFormat('en-US', {
         style: 'currency',
@@ -155,17 +153,20 @@ export class ExpenseList implements OnInit {
     this.personalColumns,
     this.handleStatusChange,
   );
-  readonly columns = computed(() =>
-    this.isAdmin && this.activeView() === 'all' ? this.allUserColumns : this.personalColumns,
+  private readonly adminMyExpenseColumns = createMyExpenseColumns(
+    this.personalColumns,
+    this.handleStatusChange,
   );
+  readonly columns = computed(() => {
+    if (!this.isAdmin) return this.personalColumns;
+    return this.activeView() === 'all' ? this.allUserColumns : this.adminMyExpenseColumns;
+  });
 
   ngOnInit(): void {
-    this._categoryService
-      .getCategories({})
+    this._categoryStore
+      .getCategories()
       .pipe(takeUntilDestroyed(this._destroyRef))
-      .subscribe(({ data }) =>
-        this.availableCategories.set(data.filter((category) => category.isActive)),
-      );
+      .subscribe();
 
     this.searchControl.valueChanges
       .pipe(
@@ -185,25 +186,31 @@ export class ExpenseList implements OnInit {
           if (view === 'mine') {
             this.filters.mine.dates.set(expenseDates);
             this.filters.mine.categories.set(categories);
+            this.filters.mine.statuses.set(this.isAdmin ? statuses : []);
           } else {
             this.filters.all.dates.set(expenseDates);
             this.filters.all.statuses.set(statuses);
             this.filters.all.categories.set(categories);
           }
           this.table.setPageIndex(0);
+          this.loading.set(true);
         }),
-        switchMap(({ view, search, expenseDates, categories, statuses }) =>
-          this._expenseService.getExpenses({
-            scope: view,
+        switchMap(({ view, search, expenseDates, categories, statuses }) => {
+          const filters = {
             search,
             expenseDates,
             categories,
-            statuses: view === 'all' ? statuses : [],
-          }),
-        ),
+            statuses: this.isAdmin ? statuses : [],
+          };
+          const request =
+            view === 'all'
+              ? this._expenseStore.getAllActiveUserExpenses(filters)
+              : this._expenseStore.getMyExpenses(filters);
+          return request.pipe(finalize(() => this.loading.set(false)));
+        }),
         takeUntilDestroyed(this._destroyRef),
       )
-      .subscribe(({ data }) => this.data.set(data));
+      .subscribe({ error: () => toast.error('Unable to load expenses') });
   }
 
   onTabActivated(tab: string): void {
@@ -212,7 +219,7 @@ export class ExpenseList implements OnInit {
     const nextView = tab === 'all' ? 'all' : 'mine';
     if (nextView === this.activeView()) return;
     this.searchControl.setValue('', { emitEvent: false });
-    this.clearViewFilters(this.activeView());
+    this.clearViewFilters();
     this.activeView.set(nextView);
     this.table.setPageIndex(0);
     this.updateFilterQueryParams();
@@ -221,17 +228,17 @@ export class ExpenseList implements OnInit {
   onFilterChange(change: TableFilterChange): void {
     switch (change.key) {
       case 'status':
-        this.filters.all.statuses.set(
+        this.filters[this.activeView()].statuses.set(
           this.statuses
             .filter((item) => change.selectedValues.includes(item.value))
             .map((item) => item.value),
         );
         break;
       case 'category': {
-        const categories = change.selectedValues.filter(
-          (value): value is ExpenseCategoryType =>
-            EXPENSE_CATEGORIES.includes(value as ExpenseCategoryType),
+        const activeCategoryIds = new Set(
+          this._categoryStore.activeCategories().map((category) => category.id),
         );
+        const categories = change.selectedValues.filter((value) => activeCategoryIds.has(value));
         this.filters[this.activeView()].categories.set(categories);
         break;
       }
@@ -247,26 +254,19 @@ export class ExpenseList implements OnInit {
     this.updateFilterQueryParams();
   }
 
-
   onCreateDialogStateChange(state: string): void {
     if (state === 'open' || state === 'closed') {
       this.createDialogState.set(state);
     }
   }
 
-  clearFilters(): void {
+  clearViewFilters(): void {
+    this.filters[this.activeView()].statuses.set([]);
     this.searchControl.setValue('', { emitEvent: false });
-    this.clearViewFilters(this.activeView());
+    this.filters[this.activeView()].dates.set([]);
+    this.filters[this.activeView()].categories.set([]);
     this.table.setPageIndex(0);
     this.updateFilterQueryParams();
-  }
-
-  private clearViewFilters(view: ExpenseScope): void {
-    this.filters[view].dates.set([]);
-    this.filters[view].categories.set([]);
-    if (view === 'all') {
-      this.filters.all.statuses.set([]);
-    }
   }
 
   readonly table = injectTable(() => ({
@@ -286,32 +286,20 @@ export class ExpenseList implements OnInit {
 
   reloadCurrentExpenses(): void {
     const isAllView = this.isAdmin && this.activeView() === 'all';
-    this._expenseService
-      .getExpenses({
-        scope: isAllView ? 'all' : 'mine',
+    const filters = {
         search: this.searchControl.value.trim(),
         expenseDates: this.filters[this.activeView()].dates(),
         categories: this.filters[this.activeView()].categories(),
-        statuses: isAllView ? this.filters.all.statuses() : [],
-      })
+        statuses: this.isAdmin ? this.filters[this.activeView()].statuses() : [],
+    };
+    const request = isAllView
+      ? this._expenseStore.getAllActiveUserExpenses(filters)
+      : this._expenseStore.getMyExpenses(filters);
+    request
       .pipe(takeUntilDestroyed(this._destroyRef))
       .subscribe({
-        next: ({ data }) => this.data.set(data),
         error: () => toast.error('Unable to reload expenses'),
       });
-  }
-
-  private toExpenseCategoryType(name: string): ExpenseCategoryType | null {
-    const categoryTypes: Record<string, ExpenseCategoryType> = {
-      food: 'food',
-      transportation: 'transportation',
-      accommodation: 'accommodation',
-      entertainment: 'entertainment',
-      'office supplies': 'office',
-      other: 'other',
-    };
-
-    return categoryTypes[name.trim().toLowerCase()] ?? null;
   }
 
   private updateFilterQueryParams(): void {
@@ -322,7 +310,7 @@ export class ExpenseList implements OnInit {
       email: null,
       expenseDates: this.filters[this.activeView()].dates().map((date) => toDateKey(date)),
       categories: this.filters[this.activeView()].categories(),
-      statuses: isAllView ? this.filters.all.statuses() : [],
+      statuses: this.isAdmin ? this.filters[this.activeView()].statuses() : [],
     });
   }
 }

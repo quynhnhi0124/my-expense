@@ -25,13 +25,13 @@
   <hlm-card>
     <hlm-card-header>
       <h2 hlmCardTitle>Monthly Spending</h2>
+      <p hlmCardDescription>Approved expenses for {{ currentYear }}</p>
     </hlm-card-header>
     <div hlmCardContent class="h-75">
       <tanstack-chart hlmChart [options]="chartOptions" aria-label="Monthly spending chart"></tanstack-chart>
     </div>
   </hlm-card>
 
-  @if (!isAdmin) {
   <hlm-card>
     <hlm-card-header>
       <h2 hlmCardTitle>Spending by Category</h2>
@@ -50,13 +50,11 @@
       }
     </div>
   </hlm-card>
-  }
 
-  @if (isAdmin) {
   <hlm-card>
     <hlm-card-header class="flex items-center justify-between gap-2">
       <h2 hlmCardTitle>My Expenses</h2>
-      <button hlmBtn variant="link" [routerLink]="['/expenses']" [queryParams]="{ statuses: ['pending'] }" class="px-0">
+      <button hlmBtn variant="link" [routerLink]="['/expenses']" class="px-0">
         View All &gt;
       </button>
     </hlm-card-header>
@@ -65,12 +63,11 @@
         [showSorting]="false" />
     </div>
   </hlm-card>
-  }
-
+  @if (isAdmin) {
   <hlm-card>
     <hlm-card-header class="flex items-center justify-between gap-2">
       <h2 hlmCardTitle>Recent Expenses</h2>
-      <button hlmBtn variant="link" [routerLink]="['/expenses']" class="px-0">
+      <button hlmBtn variant="link" [routerLink]="['/expenses']" [queryParams]="{ view: 'all' }" class="px-0">
         View All &gt;
       </button>
     </hlm-card-header>
@@ -79,4 +76,5 @@
         [showSorting]="false" />
     </div>
   </hlm-card>
+  }
 </div>

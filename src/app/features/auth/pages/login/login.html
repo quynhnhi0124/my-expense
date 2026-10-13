@@ -35,11 +35,9 @@
             </hlm-field>
             <hlm-field class="flex flex-col">
               <button hlmBtn type="submit" class="cursor-pointer" [disabled]="loginForm.invalid || isSubmitting()">
-                @if (isSubmitting()) {
-                <hlm-spinner />
-                Logging in...
-                } @else {
                 Login
+                @if (isSubmitting()) {
+                <hlm-spinner data-icon="inline-start" />
                 }
               </button>
               <p hlmFieldDescription class="text-center">

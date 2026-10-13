@@ -38,10 +38,10 @@ describe('ExpenseList', () => {
     await fixture.whenStable();
   });
 
-  it('parses supported route filters and restricts all view to admins', () => {
+  it('preserves dynamic category IDs and restricts all view to admins', () => {
     const params = convertToParamMap({
       view: 'all',
-      categories: ['food', 'invalid'],
+      categories: ['category-id-1', 'category-id-2'],
       statuses: ['draft', 'invalid'],
     });
 
@@ -49,7 +49,7 @@ describe('ExpenseList', () => {
     const userFilters = parseExpenseListRouteFilters(params, false);
 
     expect(adminFilters.view).toBe('all');
-    expect(adminFilters.categories).toEqual(['food']);
+    expect(adminFilters.categories).toEqual(['category-id-1', 'category-id-2']);
     expect(adminFilters.statuses).toEqual(['draft']);
     expect(userFilters.view).toBe('mine');
   });
@@ -58,6 +58,7 @@ describe('ExpenseList', () => {
     expect(component.data().length).toBeGreaterThan(0);
     expect(component.personalFilterGroups.map((group) => group.key)).toEqual([
       'expenseDates',
+      'status',
       'category',
     ]);
     expect(component.allUserFilterGroups.map((group) => group.key)).toEqual([
@@ -81,11 +82,24 @@ describe('ExpenseList', () => {
   });
 
   it('syncs selected category filters for the active view', () => {
-    component.onFilterChange({ key: 'category', selectedValues: ['food'] });
-    expect(component.filters.mine.categories()).toEqual(['food']);
+    component.onFilterChange({ key: 'category', selectedValues: ['1'] });
+    expect(component.filters.mine.categories()).toEqual(['1']);
 
     component.onTabActivated('all');
-    component.onFilterChange({ key: 'category', selectedValues: ['office'] });
-    expect(component.filters.all.categories()).toEqual(['office']);
+    component.onFilterChange({ key: 'category', selectedValues: ['2'] });
+    expect(component.filters.all.categories()).toEqual(['2']);
+  });
+
+  it('filters admin personal expenses by status and adds status actions without an email column', () => {
+    component.onFilterChange({ key: 'status', selectedValues: ['draft'] });
+
+    expect(component.filters.mine.statuses()).toEqual(['draft']);
+    expect(component.columns().map((column) => column.id)).toContain('actions');
+    expect(component.columns().map((column) => column.id)).not.toContain('email');
+
+    component.onTabActivated('all');
+
+    expect(component.columns().map((column) => column.id)).toContain('actions');
+    expect(component.columns().map((column) => column.id)).toContain('email');
   });
 });

@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
 import { Component, input, signal } from '@angular/core';
-import { CategoryStatusHandler, ExpenseCategory } from '@features/expenses/models';
+import { CategoryStatusHandler, ExpenseCategory } from '@features/expense-categories/data';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import { lucideEllipsis } from '@ng-icons/lucide';
 import { HlmButtonImports } from '@spartan-ng/helm/button';

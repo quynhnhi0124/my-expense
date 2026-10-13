@@ -5,11 +5,9 @@ import { HlmCardImports } from '@spartan-ng/helm/card';
 import { HlmChartImports } from '@spartan-ng/helm/chart';
 import { HlmProgressImports } from '@spartan-ng/helm/progress';
 import { AuthService } from '@core/auth/services/auth.service';
-import { MOCK_EXPENSE_CATEGORIES } from '@features/expenses/data/expense-categories.data';
-import { MOCK_EXPENSES } from '@features/expenses/data/expense.data';
-import { Expense, ExpenseStatus } from '@features/expenses/models/expense.interface';
+import { MOCK_EXPENSE } from '@features/expenses/data/expense-mock.data';
+import { Expense, ExpenseStatus, toExpense } from '@features/expenses/models/expense.types';
 import { createExpenseColumns, expenseTableFeatures } from '@features/expenses/expense-table';
-import { MOCK_USERS } from '@features/users/data/users.data';
 import { Role } from '@features/users/models/user.enum';
 import {
   injectTable,
@@ -22,6 +20,7 @@ import { scaleBand } from '@tanstack/charts/scales/band';
 import { scaleLinear } from '@tanstack/charts/scales/linear';
 import { CommonTable } from '@shared/components/table/table-data/common-table.component';
 import { TableDataHeader } from '@shared/components/table/table-data-header/table-data-header.component';
+import { MOCK_EXPENSE_CATEGORIES } from '@features/expense-categories/data';
 
 interface OverviewStat {
   status: ExpenseStatus;
@@ -59,10 +58,7 @@ export class Dashboard {
   readonly pageDescription = this.isAdmin
     ? `Welcome back ${this.currentUser?.firstName ?? 'User'}! Here's the system overview:`
     : `Welcome back ${this.currentUser?.firstName ?? 'User'}! Here's your overview:`;
-
-  private readonly activeUserIds = new Set(
-    MOCK_USERS.filter((user) => user.isActive).map((user) => user.id),
-  );
+  readonly currentYear = new Date().getFullYear();
 
   private readonly statuses: ExpenseStatus[] = [
     ExpenseStatus.APPROVED,
@@ -84,7 +80,7 @@ export class Dashboard {
     key: 'dashboard-my-expenses',
     features: expenseTableFeatures,
     columns: this.expenseColumns,
-    data: this.pendingExpenses,
+    data: this.myExpenses,
     getRowId: (expense) => String(expense.id),
     state: { sorting: this.myExpensesSorting() },
     onSortingChange: (updater) =>
@@ -106,13 +102,19 @@ export class Dashboard {
         : this.recentExpensesSorting.set(updater),
   }));
 
-  get overview(): OverviewStat[] {
-    const expenses = this.isAdmin
-      ? MOCK_EXPENSES.filter((expense) => this.activeUserIds.has(expense.userId))
-      : MOCK_EXPENSES.filter((expense) => expense.userId === this.currentUser?.id);
+  get allExpenses(): Expense[] {
+    return MOCK_EXPENSE.map(toExpense);
+  }
 
+  get expenses(): Expense[] {
+    return this.isAdmin
+      ? this.allExpenses
+      : this.allExpenses.filter((expense) => expense.userId === this.currentUser?.id);
+  }
+
+  get overview(): OverviewStat[] {
     return this.statuses.map((status) => {
-      const matches = expenses.filter((expense) => expense.status === status);
+      const matches = this.expenses.filter((expense) => expense.status === status);
       return {
         status,
         label: this.formatStatusLabel(status),
@@ -123,8 +125,10 @@ export class Dashboard {
   }
 
   get monthlyApprovedSpending() {
-    const relevantExpenses = MOCK_EXPENSES.filter(
-      (expense) => expense.userId === this.currentUser?.id && expense.status === 'approved',
+    const relevantExpenses = this.expenses.filter(
+      (expense) =>
+        expense.status === ExpenseStatus.APPROVED &&
+        new Date(expense.expenseDate).getFullYear() === this.currentYear,
     );
 
     const monthMap = new Map<string, number>();
@@ -155,32 +159,22 @@ export class Dashboard {
   }
 
   get categoryProgress(): CategoryProgress[] {
-    if (this.isAdmin) {
-      return [];
-    }
-
-    const relevantExpenses = MOCK_EXPENSES.filter(
-      (expense) => expense.userId === this.currentUser?.id,
-    );
-    const categoryMap = new Map(
-      MOCK_EXPENSE_CATEGORIES.filter((category) => category.isActive).map((category) => [
-        category.name.toLowerCase(),
-        category.name,
-      ]),
-    );
+    const activeCategories = MOCK_EXPENSE_CATEGORIES.filter((category) => category.isActive);
+    const activeCategoryIds = new Set(activeCategories.map((category) => category.id));
     const totals = new Map<string, number>();
+    const relevantExpenses = this.expenses.filter(
+      (expense) =>
+        expense.status === ExpenseStatus.APPROVED && activeCategoryIds.has(expense.category),
+    );
     const totalAmount = relevantExpenses.reduce((sum, expense) => sum + expense.amount, 0);
 
     for (const expense of relevantExpenses) {
-      const categoryName =
-        categoryMap.get(expense.category.toLowerCase()) ??
-        this.formatCategoryLabel(expense.category);
-      totals.set(categoryName, (totals.get(categoryName) ?? 0) + expense.amount);
+      totals.set(expense.category, (totals.get(expense.category) ?? 0) + expense.amount);
     }
 
-    return MOCK_EXPENSE_CATEGORIES.filter((category) => category.isActive)
+    return activeCategories
       .map((category) => {
-        const amount = totals.get(category.name) ?? 0;
+        const amount = totals.get(category.id) ?? 0;
         return {
           category: category.name,
           amount,
@@ -191,22 +185,14 @@ export class Dashboard {
   }
 
   get recentExpenses(): Expense[] {
-    const expenses = this.isAdmin
-      ? MOCK_EXPENSES.filter((expense) => this.activeUserIds.has(expense.userId))
-      : MOCK_EXPENSES.filter((expense) => expense.userId === this.currentUser?.id);
-
-    return [...expenses]
+    return [...this.allExpenses]
       .sort((a, b) => new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime())
       .slice(0, 5);
   }
 
-  get pendingExpenses(): Expense[] {
-    if (!this.isAdmin) {
-      return [];
-    }
-
-    return [...MOCK_EXPENSES]
-      .filter((expense) => expense.status === 'pending' && this.activeUserIds.has(expense.userId))
+  get myExpenses(): Expense[] {
+    return this.allExpenses
+      .filter((expense) => expense.userId === this.currentUser?.id)
       .sort((a, b) => new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime())
       .slice(0, 5);
   }
@@ -281,7 +267,7 @@ export class Dashboard {
   }
 
   private formatCategoryLabel(category: string): string {
-    return category
+    return MOCK_EXPENSE_CATEGORIES.find((item) => item.id === category)?.name ?? category
       .replace(/([A-Z])/g, ' $1')
       .replace(/^./, (value) => value.toUpperCase())
       .trim();

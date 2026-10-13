@@ -46,7 +46,7 @@ export const routes: Routes = [
         path: RoutePath.expenses.categories,
         canActivate: [adminGuard],
         loadComponent: () =>
-          import('./features/expenses/pages/expense-category-list/expense-category-list').then(
+          import('./features/expense-categories/pages/expense-category-list').then(
             (m) => m.ExpenseCategoryList,
           ),
       },

@@ -1,2 +1,2 @@
-export * from './expense-categories.data';
-export * from './expense.data';
+export * from './expense-mock.data';
+export * from './store/expense.store';

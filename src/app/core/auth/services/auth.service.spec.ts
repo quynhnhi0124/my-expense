@@ -17,9 +17,8 @@ describe('AuthService', () => {
       service.login({ email: '  USER.EMMA@X.DUMMYJSON.COM ', password: 'emilyspass' }),
     );
 
-    expect(response.status).toBe(201);
-    expect(response.body?.user.role).toBe(Role.USER);
-    expect('password' in (response.body?.user ?? {})).toBe(false);
+    expect(response.user.role).toBe(Role.USER);
+    expect('password' in response.user).toBe(false);
   });
 
   it('rejects invalid credentials and inactive accounts', async () => {

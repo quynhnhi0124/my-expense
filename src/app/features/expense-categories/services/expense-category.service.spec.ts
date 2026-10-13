@@ -1,6 +1,7 @@
 import { firstValueFrom } from 'rxjs';
-import { MOCK_EXPENSE_CATEGORIES } from '../data/expense-categories.data';
 import { ExpenseCategoryService } from './expense-category.service';
+import { MOCK_EXPENSE_CATEGORIES } from '@features/expense-categories/data/expense-categories.data';
+import { CategoryStatus } from '@features/expense-categories/data';
 
 describe('ExpenseCategoryService', () => {
   const initialCategories = MOCK_EXPENSE_CATEGORIES.map((category) => ({ ...category }));
@@ -17,7 +18,7 @@ describe('ExpenseCategoryService', () => {
 
   it('filters categories by name and active status', async () => {
     const result = await firstValueFrom(
-      service.getCategories({ search: 'food', statuses: ['active'] }),
+      service.getCategories({ search: 'food', statuses: [CategoryStatus.ACTIVE] }),
     );
 
     expect(result.data.map((category) => category.name)).toEqual(['Food']);
@@ -39,10 +40,10 @@ describe('ExpenseCategoryService', () => {
   });
 
   it('updates category status and rejects unknown ids', async () => {
-    const updated = await firstValueFrom(service.updateCategoryStatus(1, false));
+    const updated = await firstValueFrom(service.updateCategoryStatus("1", false));
 
     expect(updated.isActive).toBe(false);
-    await expect(firstValueFrom(service.updateCategoryStatus(-1, true))).rejects.toThrow(
+    await expect(firstValueFrom(service.updateCategoryStatus("-1", true))).rejects.toThrow(
       'Expense category was not found.',
     );
   });

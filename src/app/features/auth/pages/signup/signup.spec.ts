@@ -60,10 +60,11 @@ describe('Signup', () => {
     ).rejects.toThrow('An account with this email already exists.');
   });
 
-  it('submits valid form data and navigates to login', () => {
+  it('creates the account, logs in, and navigates to the dashboard', async () => {
     const email = `signup-form-${Date.now()}@example.test`;
     registeredEmails.push(email);
     const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    const setSession = vi.spyOn(authService, 'setSession').mockImplementation(() => {});
     component.signupForm.setValue({
       firstName: 'Taylor',
       lastName: 'Tester',
@@ -75,7 +76,8 @@ describe('Signup', () => {
     component.onSubmit();
 
     expect(MOCK_USERS.find((user) => user.email === email)?.role).toBe(Role.USER);
-    expect(navigate).toHaveBeenCalledWith(['/login']);
+    await vi.waitFor(() => expect(navigate).toHaveBeenCalledWith(['dashboard']), { timeout: 3000 });
+    expect(setSession).toHaveBeenCalledOnce();
     expect(component.isSubmitting()).toBe(false);
   });
 

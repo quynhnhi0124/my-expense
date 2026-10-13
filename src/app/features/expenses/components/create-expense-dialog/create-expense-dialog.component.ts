@@ -1,7 +1,6 @@
 import { Component, DestroyRef, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ExpenseCategoryType } from '@features/expenses/models/expense.interface';
 import { ExpenseService } from '@features/expenses/services/expense.service';
 import { toast } from '@spartan-ng/brain/sonner';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
@@ -27,7 +26,7 @@ export class CreateExpenseDialog {
   private readonly _expenseService = inject(ExpenseService);
   private readonly _destroyRef = inject(DestroyRef);
   readonly createDialogState = input<'open' | 'closed'>('closed');
-  readonly categoryOptions = input.required<{ value: ExpenseCategoryType; label: string }[]>();
+  readonly categoryOptions = input.required<{ value: string; label: string }[]>();
   readonly isSubmitting = signal(false);
   readonly createDialogStateChange = output<'open' | 'closed'>();
   readonly expenseCreated = output<void>();
@@ -39,7 +38,7 @@ export class CreateExpenseDialog {
     description: new FormControl('', { nonNullable: true }),
     amount: new FormControl<number | null>(null, [Validators.required, Validators.min(0.01)]),
     currency: new FormControl<'USD' | 'VND'>('USD', { nonNullable: true }),
-    category: new FormControl<ExpenseCategoryType | null>(null, [Validators.required]),
+    category: new FormControl<string | null>(null, [Validators.required]),
     expenseDate: new FormControl<Date | null>(null, [Validators.required]),
   });
 

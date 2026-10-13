@@ -37,11 +37,6 @@ export const data = {
           url: '/users',
         },
       ],
-    },
-    {
-      title: 'Notifications',
-      url: '.',
-      icon: 'lucideBot',
-    },
+    }
   ]
 };
