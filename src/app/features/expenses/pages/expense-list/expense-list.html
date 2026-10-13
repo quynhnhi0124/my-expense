@@ -1,0 +1,37 @@
+<div class="h-full flex-1 space-y-4 p-8 py-6">
+  <table-data-header class="block" title="Expenses" description="Review and manage expense reports." />
+  <ng-template #personalFilters>
+    <div class="flex flex-wrap items-center gap-2">
+      <table-data-toolbar class="w-full" [searchControl]="searchControl" [searchPlaceholder]="'Search expenses...'"
+        [filterGroups]="personalFilterGroups" (filterChange)="onFilterChange($event)" (clear)="clearViewFilters()"><button
+          hlmBtn type="button" class="ml-auto" (click)="createDialogState.set('open')">
+          Create expense
+        </button></table-data-toolbar>
+    </div>
+  </ng-template>
+
+  @if (isAdmin) {
+  <hlm-tabs [tab]="activeView()" (tabActivated)="onTabActivated($event)" class="w-full">
+    <hlm-tabs-list class="w-full justify-start" aria-label="Expense views">
+      <button hlmTabsTrigger="mine">My expenses</button>
+      <button hlmTabsTrigger="all">All user expenses</button>
+    </hlm-tabs-list>
+    <div hlmTabsContent="mine">
+      <ng-container *ngTemplateOutlet="personalFilters" />
+    </div>
+    <div hlmTabsContent="all">
+      <div class="flex flex-wrap items-center gap-2">
+        <table-data-toolbar class="w-full" [searchControl]="searchControl" [searchPlaceholder]="'Search expenses...'"
+          [filterGroups]="allUserFilterGroups" (filterChange)="onFilterChange($event)" (clear)="clearViewFilters()" />
+      </div>
+    </div>
+  </hlm-tabs>
+  } @else {
+  <ng-container *ngTemplateOutlet="personalFilters" />
+  }
+
+  <create-expense-dialog [createDialogState]="createDialogState()" [categoryOptions]="categoryOptions()"
+    (createDialogStateChange)="onCreateDialogStateChange($event)" (expenseCreated)="reloadCurrentExpenses()" />
+
+  <app-common-table [table]="table" emptyMessage="No expenses found." [loading]="loading()" />
+</div>

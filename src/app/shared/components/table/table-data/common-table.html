@@ -1,0 +1,106 @@
+<div>
+  <div hlmTableContainer class="w-full rounded-md border">
+      <table hlmTable>
+        <thead hlmTHead class="bg-background sticky top-0">
+          @for (headerGroup of renderedTable.getHeaderGroups(); track headerGroup.id) {
+            <tr hlmTr>
+              @for (header of headerGroup.headers; track header.id) {
+                <th hlmTh [attr.colSpan]="header.colSpan">
+                  @if (!header.isPlaceholder) {
+                    @if (showSorting() && header.column.getCanSort()) {
+                      <button
+                        hlmBtn
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        class="-ml-3 h-8"
+                        (click)="header.column.toggleSorting(header.column.getIsSorted() === 'asc')"
+                      >
+                        <ng-container
+                          *flexRender="header.column.columnDef.header; props: header.getContext(); let headerContent"
+                        >
+                          {{ headerContent }}
+                        </ng-container>
+                        @if (header.column.getIsSorted() === 'asc') {
+                          <ng-icon name="lucideArrowUp" />
+                        } @else if (header.column.getIsSorted() === 'desc') {
+                          <ng-icon name="lucideArrowDown" />
+                        } @else {
+                          <ng-icon name="lucideArrowUpDown" />
+                        }
+                      </button>
+                    } @else {
+                      <ng-container
+                        *flexRender="header.column.columnDef.header; props: header.getContext(); let headerContent"
+                      >
+                        {{ headerContent }}
+                      </ng-container>
+                    }
+                  }
+                </th>
+              }
+            </tr>
+          }
+        </thead>
+        <tbody hlmTBody>
+          @if (loading()) {
+            <tr hlmTr>
+              <td hlmTd class="h-24 text-center" [attr.colspan]="renderedTable.getAllLeafColumns().length">
+                <span class="inline-flex items-center justify-center gap-2">
+                  <hlm-spinner />
+                  Loading...
+                </span>
+              </td>
+            </tr>
+          } @else {
+            @for (row of renderedTable.getRowModel().rows; track row.id) {
+              <tr hlmTr>
+                @for (cell of row.getAllCells(); track cell.id) {
+                  <td hlmTd>
+                    <ng-container *flexRender="cell.column.columnDef.cell; props: cell.getContext(); let cellContent">
+                      {{ cellContent }}
+                    </ng-container>
+                  </td>
+                }
+              </tr>
+            } @empty {
+              <tr hlmTr>
+                <td hlmTd class="h-24 text-center" [attr.colspan]="renderedTable.getAllLeafColumns().length">
+                  {{ emptyMessage() }}
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (showPagination()) {
+      <div class="flex items-center justify-end gap-4 pt-4">
+        <span class="text-muted-foreground text-sm">
+          Page {{ renderedTable.atoms.pagination.get().pageIndex + 1 }} of {{ pageCount }}
+        </span>
+        <div class="flex gap-2">
+          <button
+            hlmBtn
+            type="button"
+            variant="outline"
+            size="sm"
+            [disabled]="!renderedTable.getCanPreviousPage()"
+            (click)="renderedTable.previousPage()"
+          >
+            Previous
+          </button>
+          <button
+            hlmBtn
+            type="button"
+            variant="outline"
+            size="sm"
+            [disabled]="!renderedTable.getCanNextPage()"
+            (click)="renderedTable.nextPage()"
+          >
+            Next
+          </button>
+      </div>
+      </div>
+    }
+  </div>

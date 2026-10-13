@@ -1,0 +1,23 @@
+<hlm-dialog #userDetailsDialog="hlmDialog" [state]="dialogState()" (stateChanged)="onDialogStateChange($event)">
+  <button hlmBtn type="button" size="icon-sm" variant="ghost" aria-label="User actions" [hlmDropdownMenuTrigger]="menu"
+    align="start">
+    <ng-icon name="lucideEllipsis" />
+  </button>
+  <ng-template #menu>
+    <hlm-dropdown-menu class="w-40">
+      <hlm-dropdown-menu-group>
+        <hlm-dropdown-menu-label>Actions</hlm-dropdown-menu-label>
+      </hlm-dropdown-menu-group>
+      <button hlmDropdownMenuItem [hlmDialogTriggerFor]="userDetailsDialog" (click)="onUserDialogStateChange('open')">
+        Details
+      </button>
+    </hlm-dropdown-menu>
+  </ng-template>
+
+  <update-user-dialog 
+    [id]="user().id" 
+    [openDialogState]="openUpdateDialog()"
+    (openDialogStateChange)="onUserDialogStateChange($event)"
+    (userUpdated)="handleUserUpdated()"
+  />
+</hlm-dialog>

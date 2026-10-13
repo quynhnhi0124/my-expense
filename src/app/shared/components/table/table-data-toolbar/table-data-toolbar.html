@@ -1,0 +1,52 @@
+<div class="flex items-center gap-2">
+  @if(!!searchControl()) {
+  <input
+    hlmInput
+    type="search"
+    class="w-full md:max-w-sm"
+    [placeholder]="searchPlaceholder()"
+    [attr.aria-label]="searchPlaceholder()"
+    [formControl]="searchControl()"
+  />
+  }
+  @for (filter of filterGroups(); track filter.key) {
+    @if (filter.type === 'date') {
+      <table-data-date-filter
+        [selectedDates]="parseDate(filter.selectedValues)"
+        [label]="filter.label"
+        (dateChange)="onDateFilterChange(filter, $event)"
+      />
+    } @else {
+      <hlm-popover>
+        <button hlmBtn type="button" variant="outline" hlmPopoverTrigger>
+          {{ filter.label }}
+          @if (filter.selectedValues.length) {
+            <span class="text-muted-foreground">({{ filter.selectedValues.length }})</span>
+          }
+        </button>
+        <hlm-popover-content *hlmPopoverPortal class="w-56">
+          <div class="space-y-3">
+            <p class="text-sm font-medium">Filter by {{ filter.label.toLowerCase() }}</p>
+            @for (item of filter.options ?? []; track item.id) {
+              <div class="flex cursor-pointer items-center gap-2 text-sm">
+                <hlm-checkbox
+                  [inputId]="item.id"
+                  [checked]="filter.selectedValues.includes(item.value)"
+                  [aria-label]="'Filter by ' + item.label"
+                  (checkedChange)="toggleFilter(filter, item.value, $event)"
+                />
+                <label [for]="item.id" class="cursor-pointer">{{ item.label }}</label>
+              </div>
+            }
+          </div>
+        </hlm-popover-content>
+      </hlm-popover>
+    }
+  }
+  @if (hasActiveFilters()) {
+    <button hlmBtn type="button" variant="ghost" size="sm" (click)="clear.emit()">
+      Clear filters
+    </button>
+  }
+  <ng-content></ng-content>
+</div>

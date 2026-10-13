@@ -1,0 +1,9 @@
+<hlm-popover>
+  <button hlmBtn type="button" variant="outline" hlmPopoverTrigger>
+    <ng-icon name="lucideCalendarDays" />
+    {{ selectedLabel }}
+  </button>
+  <hlm-popover-content *hlmPopoverPortal class="w-auto p-0">
+    <hlm-calendar-multi [date]="selectedDates()" (dateChange)="onDateChange($event)" />
+  </hlm-popover-content>
+</hlm-popover>

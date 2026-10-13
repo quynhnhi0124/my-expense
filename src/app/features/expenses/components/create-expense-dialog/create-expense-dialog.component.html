@@ -1,0 +1,90 @@
+<hlm-dialog [state]="createDialogState()" (stateChanged)="createDialogStateChange.emit($event)">
+  <hlm-dialog-content *hlmDialogPortal class="sm:max-w-xl">
+    <hlm-dialog-header>
+      <h3 hlmDialogTitle>Create expense</h3>
+      <p hlmDialogDescription>Enter the expense details and submit for review</p>
+    </hlm-dialog-header>
+
+    <form [formGroup]="createExpenseForm" (ngSubmit)="submit()">
+      <div class="grid gap-4 py-2">
+        <div class="grid gap-2">
+          <label for="expenseTitle" class="text-sm font-medium">Title</label>
+          <input hlmInput id="expenseTitle" formControlName="title" placeholder="Expense title" />
+          @if (createExpenseForm.controls['title'].touched && createExpenseForm.controls['title'].hasError('required'))
+          {
+          <p class="text-destructive text-sm">Title is required</p>
+          }
+        </div>
+
+        <div class="grid gap-2">
+          <label for="expenseDescription" class="text-sm font-medium">Description</label>
+          <input hlmInput id="expenseDescription" formControlName="description" placeholder="Optional details" />
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="grid gap-2">
+            <label for="expenseAmount" class="text-sm font-medium">Amount</label>
+            <input hlmInput id="expenseAmount" type="number" min="0.01" step="0.01" formControlName="amount"
+              placeholder="0.00" />
+            @if (createExpenseForm.controls['amount'].touched && createExpenseForm.controls['amount'].invalid) {
+            <p class="text-destructive text-sm">Enter an amount greater than zero</p>
+            }
+          </div>
+          <div class="grid gap-2">
+            <label for="expenseCurrency" class="text-sm font-medium">Currency</label>
+            <hlm-select id="expenseCurrency" formControlName="currency">
+              <hlm-select-trigger aria-label="Currency">
+                <hlm-select-value placeholder="Select currency" />
+              </hlm-select-trigger>
+              <hlm-select-content *hlmSelectPortal>
+                <hlm-select-item value="USD">USD</hlm-select-item>
+                <hlm-select-item value="VND">VND</hlm-select-item>
+              </hlm-select-content>
+            </hlm-select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div class="grid gap-2">
+            <label for="expenseDate" class="text-sm font-medium">Expense date</label>
+            <hlm-date-picker id="expenseDate" formControlName="expenseDate">
+              <hlm-date-picker-trigger buttonId="expenseDate" class="w-full">
+                Select expense date
+              </hlm-date-picker-trigger>
+            </hlm-date-picker>
+            @if (createExpenseForm.controls['expenseDate'].touched &&
+            createExpenseForm.controls['expenseDate'].hasError('required')) {
+            <p class="text-destructive text-sm">Expense date is required</p>
+            }
+          </div>
+          <div class="grid gap-2">
+            <label for="expenseCategory" class="text-sm font-medium">Category</label>
+            <hlm-select id="expenseCategory" formControlName="category">
+              <hlm-select-trigger aria-label="Expense category">
+                <hlm-select-value placeholder="Select category" />
+              </hlm-select-trigger>
+              <hlm-select-content *hlmSelectPortal>
+                @for (category of categoryOptions(); track category.value) {
+                <hlm-select-item [value]="category.value">{{ category.label }}</hlm-select-item>
+                }
+              </hlm-select-content>
+            </hlm-select>
+            @if (createExpenseForm.controls['category'].touched &&
+            createExpenseForm.controls['category'].hasError('required')) {
+            <p class="text-destructive text-sm">Category is required</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <hlm-dialog-footer class="mt-4">
+        <button hlmBtn type="button" variant="outline" (click)="createDialogStateChange.emit('closed')">
+          Cancel
+        </button>
+        <button hlmBtn type="submit" [disabled]="createExpenseForm.invalid || isSubmitting()">
+          Create expense
+        </button>
+      </hlm-dialog-footer>
+    </form>
+  </hlm-dialog-content>
+</hlm-dialog>

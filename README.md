@@ -1,59 +1,42 @@
-# ExpenseManagement
+# Expense Management
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.0.3.
+An expense management application built with Angular 22. The application currently uses in-memory mock data and is not connected to a backend.
 
-## Development server
+## Features
 
-To start a local development server, run:
+- **Authentication:** Sign in with a mock account. Newly registered users are automatically signed in and redirected to the dashboard.
+- **Dashboard:** View expense totals by status, approved spending by month, spending by category, and recent expenses. Data is scoped according to the user's role.
+- **Expenses:** Users can view and create their own expenses. Admins can switch between **My expenses** and **All user expenses**, filter records, and update expense statuses.
+- **Expense categories:** Admins can search and filter categories, create categories, and activate or deactivate them.
+- **Users:** Admins can search and filter users by role or status, view user details, and update roles or account status.
+- **Shared tables:** Feature lists use a common table with sorting, pagination, and loading states.
 
-```bash
-ng serve
-```
+## Getting started
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Requirements: Node.js 22.22.3 or later in the 22.x line, 24.15.0 or later in the 24.x line, or 26.x or later.
 
 ```bash
-ng generate --help
+npm install
+npm start
 ```
 
-## Building
+Once the development server starts, open [http://localhost:4200](http://localhost:4200).
 
-To build the project run:
+## Demo accounts
+
+| Role | Email | Password |
+| --- | --- | --- |
+| Admin | `admin@gmail.com` | `Admin123` |
+| User | `user@gmail.com` | `User123` |
+
+Sign in at `/login`. Users can access their own expense data. Admins can also view all expenses and manage users and expense categories. The other mock user accounts are inactive and cannot sign in.
+
+## Common commands
 
 ```bash
-ng build
+npm start     # Start the development server
+npm run build # Build the application to dist/
+npm test      # Run unit tests
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Mock operations include a delay to simulate network requests. Created and updated records are kept in memory and reset to their initial fixtures when the application reloads. The sign-in session is stored in browser storage.

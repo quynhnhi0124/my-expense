@@ -1,0 +1,26 @@
+<div class="h-full flex-1 space-y-4 p-8 py-6">
+  <table-data-header class="block" title="Expense categories" description="Manage categories used to classify expenses." />
+
+  <div class="flex flex-wrap items-center gap-2">
+    <table-data-toolbar
+      class="w-full"
+      [searchControl]="searchControl"
+      [searchPlaceholder]="'Search categories...'"
+      [filterGroups]="filterGroups"
+      (filterChange)="onFilterChange($event)"
+      (clear)="clearFilters()"
+    >
+    <button hlmBtn type="button" class="ml-auto" (click)="createDialogState.set('open')">
+      Create category
+    </button>
+    </table-data-toolbar>
+  </div>
+
+  <app-create-expense-category
+    [dialogState]="createDialogState()"
+    (dialogStateChange)="onCreateDialogStateChange($event)"
+    (categoryCreated)="onCategoryCreated()"
+  />
+
+  <app-common-table [table]="table" emptyMessage="No categories found." [loading]="loading()"/>
+</div>

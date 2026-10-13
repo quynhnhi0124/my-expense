@@ -1,10 +1,11 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideBookOpen,
   lucideBot,
   lucideChevronRight,
+  lucideReceipt,
   lucideSettings2,
   lucideSquareTerminal,
   lucideUsers,
@@ -14,7 +15,7 @@ import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
 
 @Component({
   selector: 'nav-items',
-  imports: [HlmSidebarImports, NgIcon, HlmCollapsibleImports, RouterLink],
+  imports: [HlmSidebarImports, NgIcon, HlmCollapsibleImports, RouterLink, RouterLinkActive],
   providers: [
     provideIcons({
       lucideSquareTerminal,
@@ -22,6 +23,7 @@ import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
       lucideBookOpen,
       lucideSettings2,
       lucideChevronRight,
+      lucideReceipt,
       lucideUsers,
     }),
   ],
@@ -30,40 +32,16 @@ import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
     <hlm-sidebar-group>
       <ul hlmSidebarMenu>
         @for (item of items(); track $index) {
-          <!-- <hlm-collapsible [expanded]="item.isActive ?? false" class="group/collapsible">
-            <li hlmSidebarMenuItem>
-              <button
-                hlmCollapsibleTrigger
-                hlmSidebarMenuButton
-                class="flex w-full items-center justify-between"
-              >
-                <span>{{ item.title }} 1111111</span>
-                <ng-icon
-                  name="lucideChevronRight"
-                  class="ml-auto transition-transform group-data-[state=open]/collapsible:rotate-90"
-                  hlm
-                />
-              </button>
-              <hlm-collapsible-content>
-                <ul hlmSidebarMenuSub>
-                  @for (subItem of item.items; track subItem.title) {
-                    <li hlmSidebarMenuSubItem>
-                      <button hlmSidebarMenuSubButton class="w-full">
-                        <span>{{ subItem.title }}</span>
-                      </button>
-                    </li>
-                  }
-                </ul>
-              </hlm-collapsible-content>
-            </li>
-          </hlm-collapsible> -->
-          <hlm-collapsible [expanded]="item.isActive ?? false" class="group/collapsible">
+          <hlm-collapsible
+            [expanded]="item.isActive ?? isGroupActive(item.items ?? [])"
+            class="group/collapsible"
+          >
             <li hlmSidebarMenuItem>
               @if (item.items; as subItems) {
                 <button
                   hlmCollapsibleTrigger
                   hlmSidebarMenuButton
-                  /* hlmSidebarMenuAction */
+                  [isActive]="isGroupActive(subItems)"
                   class="flex w-full items-center justify-between"
                 >
                   <ng-icon [name]="item.icon" />
@@ -78,15 +56,29 @@ import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
                   <ul hlmSidebarMenuSub>
                     @for (subItem of subItems; track $index) {
                       <li hlmSidebarMenuSubItem>
-                        <a hlmSidebarMenuSubButton [routerLink]="subItem.url">{{
-                          subItem.title
-                        }}</a>
+                        <a
+                          hlmSidebarMenuSubButton
+                          [routerLink]="subItem.url"
+                          routerLinkActive
+                          #activeLink="routerLinkActive"
+                          [routerLinkActiveOptions]="{ exact: true }"
+                          [isActive]="activeLink.isActive"
+                        >
+                          {{ subItem.title }}
+                        </a>
                       </li>
                     }
                   </ul>
                 </hlm-collapsible-content>
               } @else {
-                <a hlmSidebarMenuButton [routerLink]="item.url">
+                <a
+                  hlmSidebarMenuButton
+                  [routerLink]="item.url"
+                  routerLinkActive
+                  #activeLink="routerLinkActive"
+                  [routerLinkActiveOptions]="{ exact: true }"
+                  [isActive]="activeLink.isActive"
+                >
                   <ng-icon [name]="item.icon" />
                   {{ item.title }}
                 </a>
@@ -99,6 +91,8 @@ import { HlmSidebarImports } from '@spartan-ng/helm/sidebar';
   `,
 })
 export class NavItems {
+  private readonly _router = inject(Router);
+
   public readonly items = input.required<
     {
       title: string;
@@ -111,4 +105,8 @@ export class NavItems {
       }[];
     }[]
   >();
+
+  isGroupActive(items: { title: string; url: string }[]): boolean {
+    return items.some((item) => this._router.isActive(item.url, true));
+  }
 }

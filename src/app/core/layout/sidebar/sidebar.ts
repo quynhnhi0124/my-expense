@@ -6,22 +6,55 @@ import { NavItems } from './nav-items';
 import { data } from './data';
 import { HlmAvatarImports } from '@spartan-ng/helm/avatar';
 import { HlmDropdownMenuImports } from '@spartan-ng/helm/dropdown-menu';
-
+import { AuthService } from '@core/auth/services/auth.service';
+import { Router } from '@angular/router';
+import { RoutePath } from '@core/routing/routes';
+import { User } from '@features/users/models/user.interface';
+import { Role } from '@features/users/models/user.enum';
 
 @Component({
-  imports: [HlmSidebarImports, NgIcon, NavItems, HlmAvatarImports, HlmDropdownMenuImports],
+  imports: [
+    HlmSidebarImports,
+    NgIcon,
+    NavItems,
+    HlmAvatarImports,
+    HlmDropdownMenuImports,
+  ],
   selector: 'app-sidebar',
   styleUrl: './sidebar.css',
   templateUrl: './sidebar.html',
-  providers: [provideIcons({lucideCommand, lucideChevronsUpDown})]
+  providers: [provideIcons({ lucideCommand, lucideChevronsUpDown })],
 })
 export class AppSidebar {
   private readonly _sidebarService = inject(HlmSidebarService);
-	protected readonly _menuSide = computed(() => (this._sidebarService.isMobile() ? 'top' : 'right'));
-  public readonly user = {
-    name: "string",
-		email: "string",
-		avatar: "string",
-	};
+  private readonly router = inject(Router);
+  public authService = inject(AuthService);
+  protected readonly _menuSide = computed(() =>
+    this._sidebarService.isMobile() ? 'top' : 'right',
+  );
+  currentUser = this.authService.getCurrentUser();
   data = data;
+
+  getNavMain(user: User | null): typeof data.navMain {
+    const visibleItems = data.navMain.filter(
+      (item) => user?.role === Role.ADMIN || item.title !== 'User Management',
+    );
+
+    return visibleItems.map((item) => {
+      if (item.title !== 'Expense Management' || user?.role === Role.ADMIN || !item.items) {
+        return item;
+      }
+
+      return {
+        ...item,
+        items: item.items.filter((subItem) => subItem.url !== '/expense-categories'),
+      };
+    });
+  }
+
+  logout() {
+    this.authService.logout().subscribe({
+      next: () => this.router.navigate([RoutePath.auth.login]),
+    });
+  }
 }

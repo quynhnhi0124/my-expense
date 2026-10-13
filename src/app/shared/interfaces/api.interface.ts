@@ -1,5 +1,5 @@
 
-export interface ApiResponse<T> {
+export interface ApiGetListResponse<T> {
   data: T[];
   rowCount: number;
   skip: number;
