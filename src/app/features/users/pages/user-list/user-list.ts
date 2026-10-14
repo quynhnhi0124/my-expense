@@ -1,5 +1,5 @@
-import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, computed, effect, inject, signal } from '@angular/core';
+import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import {
@@ -19,7 +19,7 @@ import {
 import { User } from '@features/users/models/user.interface';
 import { UserService } from '@features/users/services/user.service';
 import { UserActionsButton } from '@features/users/components/user-table-actions/user-table-actions';
-import { debounceTime, distinctUntilChanged, finalize, map, switchMap, tap } from 'rxjs';
+import { debounceTime, distinctUntilChanged, map } from 'rxjs';
 import { Role, RoleLabel, UserStatus, UserStatusLabel } from '@features/users/models/user.enum';
 import { CommonTable } from '@shared/components/table/table-data/common-table.component';
 import { TableDataHeader } from '@shared/components/table/table-data-header/table-data-header.component';
@@ -65,12 +65,10 @@ interface UserListFilters {
   styleUrl: './user-list.css',
   templateUrl: './user-list.html',
 })
-export class UserList implements OnInit {
+export class UserList {
   private readonly _userService = inject(UserService);
-  private readonly _destroyRef = inject(DestroyRef);
   private readonly _route = inject(ActivatedRoute);
   private readonly _router = inject(Router);
-  readonly loading = signal<boolean>(false);
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly roleControl = new FormControl<Role[]>([], { nonNullable: true });
   readonly statusControl = new FormControl<UserStatus[]>([], { nonNullable: true });
@@ -86,8 +84,22 @@ export class UserList implements OnInit {
       value: UserStatus.INACTIVE,
     },
   ];
-  readonly data = signal<User[]>([]);
   private readonly sorting = signal<SortingState>([]);
+  private readonly searchValue = toSignal(
+    this.searchControl.valueChanges.pipe(debounceTime(300), distinctUntilChanged()),
+    { initialValue: this.searchControl.value },
+  );
+  private readonly routeFilters = toSignal(
+    this._route.queryParamMap.pipe(map((params) => this.parseFilters(params))),
+    { initialValue: this.parseFilters(this._route.snapshot.queryParamMap) },
+  );
+  private readonly usersResource = rxResource({
+    defaultValue: { data: [], rowCount: 0, skip: 0, limit: 30 },
+    params: () => this.routeFilters(),
+    stream: ({ params }) => this._userService.getUsers(params),
+  });
+  readonly data = computed(() => this.usersResource.value().data);
+  readonly loading = computed(() => this.usersResource.isLoading());
 
   get filterGroups(): TableFilterGroup[] {
     return [
@@ -147,26 +159,16 @@ export class UserList implements OnInit {
     }),
   ]);
 
-  ngOnInit(): void {
-    this.searchControl.valueChanges
-      .pipe(
-        debounceTime(300),
-        distinctUntilChanged(),
-        tap(() => this.updateSearchQueryParam()),
-        takeUntilDestroyed(this._destroyRef),
-      )
-      .subscribe();
+  constructor() {
+    effect(() => {
+      this.searchValue();
+      this.updateSearchQueryParam();
+    });
 
-    this._route.queryParamMap
-      .pipe(
-        map((params) => this.parseFilters(params)),
-        tap((filters) => {
-          this.syncFilterControls(filters);
-        }),
-        switchMap((filters) => this.loadUsers(filters)),
-        takeUntilDestroyed(this._destroyRef),
-      )
-      .subscribe();
+    effect(() => {
+      const filters = this.routeFilters();
+      this.syncFilterControls(filters);
+    });
   }
 
   readonly table = injectTable<UserTableFeatures, User>(() => ({
@@ -212,26 +214,8 @@ export class UserList implements OnInit {
     this.table.setPageIndex(0);
   }
 
-  private filtersFromControls(): UserListFilters {
-    return {
-      search: this.searchControl.value.trim(),
-      role: this.roleControl.value,
-      status: this.statusControl.value,
-    };
-  }
-
-  private loadUsers(filters: UserListFilters) {
-    this.loading.set(true);
-    return this._userService.getUsers(filters).pipe(
-      tap(({ data }) => this.data.set(data)),
-      finalize(() => this.loading.set(false)),
-    );
-  }
-
   private reloadUsers(): void {
-    this.loadUsers(this.filtersFromControls())
-      .pipe(takeUntilDestroyed(this._destroyRef))
-      .subscribe();
+    this.usersResource.reload();
   }
 
   clearFilters(): void {

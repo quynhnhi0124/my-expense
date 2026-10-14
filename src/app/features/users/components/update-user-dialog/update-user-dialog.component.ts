@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
-import { Component, DestroyRef, effect, inject, input, output, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, computed, effect, inject, input, output, signal } from '@angular/core';
+import { rxResource } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { Role, RoleLabel, UserStatus, UserStatusLabel } from '@features/users/models/user.enum';
 import { User } from '@features/users/models/user.interface';
@@ -13,7 +13,7 @@ import { HlmDialogImports } from '@spartan-ng/helm/dialog';
 import { HlmSelectImports } from '@spartan-ng/helm/select';
 import { HlmSkeletonImports } from '@spartan-ng/helm/skeleton';
 import { HlmSpinnerImports } from '@spartan-ng/helm/spinner';
-import { tap } from 'rxjs';
+import { catchError, finalize, of } from 'rxjs';
 @Component({
   selector: 'update-user-dialog',
   templateUrl: './update-user-dialog.html',
@@ -29,13 +29,30 @@ import { tap } from 'rxjs';
 })
 export class UpdateUserDialog {
   readonly id = input.required<string>();
-  readonly user = signal<User | null>(null);
   private readonly userService = inject(UserService);
-  private readonly _destroyRef = inject(DestroyRef);
   readonly openDialogState = input.required<BrnDialogState>();
   readonly openDialogStateChange = output<BrnDialogState>();
   readonly userUpdated = output<void>();
-  readonly isLoading = signal<boolean>(false);
+  private readonly isSubmitting = signal(false);
+  private readonly userResource = rxResource<User | null, string | null>({
+    defaultValue: null,
+    params: () => (this.openDialogState() === OpenDialogState.OPEN ? this.id() : null),
+    stream: ({ params }) => {
+      if (!params) {
+        return of(null);
+      }
+
+      return this.userService.getUserDetail(params).pipe(
+        catchError((error: unknown) => {
+          this.openDialogStateChange.emit('closed');
+          toast.error(error instanceof Error ? error.message : 'Failed to load user');
+          return of(null);
+        }),
+      );
+    },
+  });
+  readonly user = computed(() => this.userResource.value());
+  readonly isLoading = computed(() => this.userResource.isLoading() || this.isSubmitting());
 
   readonly userForm = new FormGroup({
     isActive: new FormControl(true, { nonNullable: true }),
@@ -54,41 +71,24 @@ export class UpdateUserDialog {
 
   constructor() {
     effect(() => {
-      if (this.openDialogState() === OpenDialogState.OPEN) {
-        this.getUser();
+      const user = this.user();
+      if (!user) {
+        return;
       }
+
+      this.userForm.patchValue({
+        role: user.role,
+        isActive: user.isActive,
+      });
+      this.userForm.markAsPristine();
     });
   }
 
   onDialogStateChange(state: BrnDialogState) {
     this.openDialogStateChange.emit(state);
-    if (state === "closed") {
+    if (state === 'closed') {
       this.userForm.reset();
     }
-  }
-
-  getUser() {
-    this.isLoading.set(true);
-    this.userService
-      .getUserDetail(this.id())
-      .pipe(
-        takeUntilDestroyed(this._destroyRef),
-        tap(() => this.isLoading.set(false)),
-      )
-      .subscribe({
-        next: (user) => {
-          this.user.set(user);
-          this.userForm.patchValue({
-            role: user.role,
-            isActive: user.isActive,
-          });
-          this.userForm.markAsPristine();
-        },
-        error: (error) => {
-          this.openDialogStateChange.emit('closed');
-          toast.error(error instanceof Error ? error.message : 'Failed to load user');
-        },
-      });
   }
 
   hasChanges(): boolean {
@@ -105,24 +105,23 @@ export class UpdateUserDialog {
     if (this.userForm.invalid || !this.hasChanges()) {
       return;
     }
-    this.isLoading.set(true);
+
+    this.isSubmitting.set(true);
+
     this.userService
       .updateUser(this.id(), this.userForm.getRawValue())
       .pipe(
-        tap(() => {
-          this.isLoading.set(false);
+        finalize(() => {
+          this.isSubmitting.set(false);
           this.openDialogStateChange.emit('closed');
         }),
       )
       .subscribe({
-        next: (user) => {
-          console.log('updated user: ', user);
+        next: () => {
           toast.success('Successfully update user');
           this.userUpdated.emit();
         },
-        error: (error) => {
-          console.log(error);
-        },
+        error: () => toast.error('Unable to update user'),
       });
   }
 }

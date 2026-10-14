@@ -1,6 +1,6 @@
 import { DatePipe } from '@angular/common';
-import { Component, DestroyRef, inject, OnInit, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, computed, effect, inject, signal } from '@angular/core';
+import { rxResource, toSignal } from '@angular/core/rxjs-interop';
 import { FormControl } from '@angular/forms';
 import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
@@ -18,7 +18,7 @@ import {
   SortingState,
   tableFeatures,
 } from '@tanstack/angular-table';
-import { debounceTime, distinctUntilChanged, finalize, map, switchMap, tap } from 'rxjs';
+import { debounceTime, distinctUntilChanged, map } from 'rxjs';
 import { toast } from '@spartan-ng/brain/sonner';
 import { ExpenseCategoryService } from '../services/expense-category.service';
 import { CommonTable } from '@shared/components/table/table-data/common-table.component';
@@ -34,7 +34,6 @@ import { CategoryActionsButton } from '@features/expense-categories/components/c
 import { CreateExpenseCategory } from '@features/expense-categories/components/create-expense-category/create-expense-category.component';
 
 import { BrnDialogState } from '@spartan-ng/brain/dialog';
-import { ExpenseCategoryStore } from '../data/store/expense-categories.store';
 import { CategoryStatus, CategoryStatusLabel, ExpenseCategory, ExpenseCategoryParams } from '@features/expense-categories/data';
 
 const features = tableFeatures({
@@ -70,23 +69,34 @@ const categoryStatusBadges: Record<string, StatusBadgeProps> = {
   styleUrl: './expense-category-list.css',
   templateUrl: './expense-category-list.html',
 })
-export class ExpenseCategoryList implements OnInit {
+export class ExpenseCategoryList {
   private readonly _categoryService = inject(ExpenseCategoryService);
-  private readonly _destroyRef = inject(DestroyRef);
   private readonly _route = inject(ActivatedRoute);
   private readonly _router = inject(Router);
-  private readonly store = inject(ExpenseCategoryStore);
   private readonly sorting = signal<SortingState>([]);
-  
+
   readonly searchControl = new FormControl('', { nonNullable: true });
   readonly statusControl = new FormControl<CategoryStatus[]>([], { nonNullable: true });
   readonly statuses: FilterItem<CategoryStatus>[] = [
     { id: 'status-active', label: CategoryStatusLabel[CategoryStatus.ACTIVE], value: CategoryStatus.ACTIVE },
     { id: 'status-inactive', label: CategoryStatusLabel[CategoryStatus.INACTIVE], value: CategoryStatus.INACTIVE },
   ];
-  readonly loading = signal<boolean>(false);
   readonly createDialogState = signal<BrnDialogState>('closed');
-  readonly data = signal<ExpenseCategory[]>([]);
+  private readonly searchValue = toSignal(
+    this.searchControl.valueChanges.pipe(debounceTime(300), distinctUntilChanged()),
+    { initialValue: this.searchControl.value },
+  );
+  private readonly routeFilters = toSignal(
+    this._route.queryParamMap.pipe(map((params) => this.parseFilters(params))),
+    { initialValue: this.parseFilters(this._route.snapshot.queryParamMap) },
+  );
+  private readonly categoriesResource = rxResource({
+    defaultValue: { data: [], rowCount: 0, skip: 0, limit: 30 },
+    params: () => this.routeFilters(),
+    stream: ({ params }) => this._categoryService.getCategories(params),
+  });
+  readonly data = computed(() => this.categoriesResource.value().data);
+  readonly loading = computed(() => this.categoriesResource.isLoading());
 
   get filterGroups(): TableFilterGroup[] {
     return [
@@ -140,29 +150,16 @@ export class ExpenseCategoryList implements OnInit {
     }),
   ]);
 
-  ngOnInit(): void {
-    this.searchControl.valueChanges
-      .pipe(
-        debounceTime(300),
-        distinctUntilChanged(),
-        tap(() => this.updateSearchQueryParam()),
-        takeUntilDestroyed(this._destroyRef),
-      )
-      .subscribe();
+  constructor() {
+    effect(() => {
+      this.searchValue();
+      this.updateSearchQueryParam();
+    });
 
-    this._route.queryParamMap
-      .pipe(
-        map((params) => this.parseFilters(params)),
-        tap((filters) => {
-          this.syncFilterControls(filters);
-          this.loading.set(true);
-        }),
-        switchMap((filters) =>
-          this.loadCategories(filters).pipe(finalize(() => this.loading.set(false))),
-        ),
-        takeUntilDestroyed(this._destroyRef),
-      )
-      .subscribe();
+    effect(() => {
+      const filters = this.routeFilters();
+      this.syncFilterControls(filters);
+    });
   }
 
   readonly table = injectTable(() => ({
@@ -191,19 +188,6 @@ export class ExpenseCategoryList implements OnInit {
     this.searchControl.setValue(filters.search ?? "", { emitEvent: false });
     this.statusControl.setValue(filters.statuses, { emitEvent: false });
     this.table.setPageIndex(0);
-  }
-
-  private filtersFromControls(): ExpenseCategoryParams {
-    return {
-      search: this.searchControl.value.trim(),
-      statuses: this.statusControl.value,
-    };
-  }
-
-  private loadCategories(filters: ExpenseCategoryParams) {
-    return this._categoryService
-      .getCategories(filters)
-      .pipe(tap(({ data }) => this.data.set(data)));
   }
 
   private updateSearchQueryParam(): void {
@@ -239,22 +223,16 @@ export class ExpenseCategoryList implements OnInit {
   }
 
   onCategoryCreated(): void {
-    this.reloadCategories();
+    this.categoriesResource.reload();
   }
 
   private readonly updateCategoryStatus = (categoryId: string, isActive: boolean): void => {
     this._categoryService.updateCategoryStatus(categoryId, isActive).subscribe({
       next: () => {
         toast.success(isActive ? 'Category activated' : 'Category deactivated');
-        this.reloadCategories();
+        this.categoriesResource.reload();
       },
       error: () => toast.error('Unable to update category status'),
     });
   };
-
-  private reloadCategories(): void {
-    this.loadCategories(this.filtersFromControls())
-      .pipe(takeUntilDestroyed(this._destroyRef))
-      .subscribe();
-  }
 }

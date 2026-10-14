@@ -5,7 +5,7 @@
       <h2 hlmCardTitle>{{ isAdmin ? 'System Overview' : 'Overview' }}</h2>
     </hlm-card-header>
     <div hlmCardContent class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      @for (stat of overview; track stat.status) {
+      @for (stat of overview(); track stat.status) {
       <div class="rounded-lg border bg-card p-4 shadow-sm">
         <div class="mb-2 flex items-center justify-between gap-3">
           <span class="text-sm font-medium capitalize text-muted-foreground">{{ stat.label }}</span>
@@ -37,7 +37,7 @@
       <h2 hlmCardTitle>Spending by Category</h2>
     </hlm-card-header>
     <div hlmCardContent class="space-y-5">
-      @for (item of categoryProgress; track item.category) {
+      @for (item of categoryProgress(); track item.category) {
       <div class="space-y-2">
         <div class="flex items-center justify-between text-sm">
           <span class="font-medium">{{ item.category }}</span>

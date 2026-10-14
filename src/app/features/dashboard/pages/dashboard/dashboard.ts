@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { HlmButtonImports } from '@spartan-ng/helm/button';
 import { HlmCardImports } from '@spartan-ng/helm/card';
@@ -64,68 +64,29 @@ export class Dashboard {
     ExpenseStatus.APPROVED,
     ExpenseStatus.DRAFT,
     ExpenseStatus.PENDING,
-    ExpenseStatus.REJECTED
-  ]
+    ExpenseStatus.REJECTED,
+  ];
   private readonly myExpensesSorting = signal<SortingState>([]);
   private readonly recentExpensesSorting = signal<SortingState>([]);
-  private readonly expenseColumns = createExpenseColumns({
-    titleHeader: 'Title',
-    dateHeader: 'Date',
-    formatCategory: (category) => this.formatCategoryLabel(category),
-    formatAmount: (expense) => this.formatCurrency(expense.amount),
-    formatDate: (date) => this.formatDate(date),
-  });
-
-  readonly myExpensesTable = injectTable(() => ({
-    key: 'dashboard-my-expenses',
-    features: expenseTableFeatures,
-    columns: this.expenseColumns,
-    data: this.myExpenses,
-    getRowId: (expense) => String(expense.id),
-    state: { sorting: this.myExpensesSorting() },
-    onSortingChange: (updater) =>
-      isFunction(updater)
-        ? this.myExpensesSorting.update(updater)
-        : this.myExpensesSorting.set(updater),
-  }));
-
-  readonly recentExpensesTable = injectTable(() => ({
-    key: 'dashboard-recent-expenses',
-    features: expenseTableFeatures,
-    columns: this.expenseColumns,
-    data: this.recentExpenses,
-    getRowId: (expense) => String(expense.id),
-    state: { sorting: this.recentExpensesSorting() },
-    onSortingChange: (updater) =>
-      isFunction(updater)
-        ? this.recentExpensesSorting.update(updater)
-        : this.recentExpensesSorting.set(updater),
-  }));
-
-  get allExpenses(): Expense[] {
-    return MOCK_EXPENSE.map(toExpense);
-  }
-
-  get expenses(): Expense[] {
-    return this.isAdmin
-      ? this.allExpenses
-      : this.allExpenses.filter((expense) => expense.userId === this.currentUser?.id);
-  }
-
-  get overview(): OverviewStat[] {
-    return this.statuses.map((status) => {
-      const matches = this.expenses.filter((expense) => expense.status === status);
+  readonly allExpenses = computed<Expense[]>(() => MOCK_EXPENSE.map(toExpense));
+  readonly expenses = computed<Expense[]>(() =>
+    this.isAdmin
+      ? this.allExpenses()
+      : this.allExpenses().filter((expense) => expense.userId === this.currentUser?.id),
+  );
+  readonly overview = computed<OverviewStat[]>(() =>
+    this.statuses.map((status) => {
+      const matches = this.expenses().filter((expense) => expense.status === status);
       return {
         status,
         label: this.formatStatusLabel(status),
         total: matches.reduce((sum, expense) => sum + expense.amount, 0),
         count: matches.length,
       };
-    });
-  }
-
-  get monthlyApprovedSpending() {
-    const relevantExpenses = this.expenses.filter(
+    }),
+  );
+  readonly monthlyApprovedSpending = computed(() => {
+    const relevantExpenses = this.expenses().filter(
       (expense) =>
         expense.status === ExpenseStatus.APPROVED &&
         new Date(expense.expenseDate).getFullYear() === this.currentYear,
@@ -156,13 +117,12 @@ export class Dashboard {
       month,
       value: monthMap.get(month) ?? 0,
     }));
-  }
-
-  get categoryProgress(): CategoryProgress[] {
+  });
+  readonly categoryProgress = computed<CategoryProgress[]>(() => {
     const activeCategories = MOCK_EXPENSE_CATEGORIES.filter((category) => category.isActive);
     const activeCategoryIds = new Set(activeCategories.map((category) => category.id));
     const totals = new Map<string, number>();
-    const relevantExpenses = this.expenses.filter(
+    const relevantExpenses = this.expenses().filter(
       (expense) =>
         expense.status === ExpenseStatus.APPROVED && activeCategoryIds.has(expense.category),
     );
@@ -182,23 +142,54 @@ export class Dashboard {
         };
       })
       .sort((a, b) => b.amount - a.amount);
-  }
-
-  get recentExpenses(): Expense[] {
-    return [...this.allExpenses]
+  });
+  readonly recentExpenses = computed<Expense[]>(() =>
+    [...this.allExpenses()]
       .sort((a, b) => new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime())
-      .slice(0, 5);
-  }
-
-  get myExpenses(): Expense[] {
-    return this.allExpenses
+      .slice(0, 5),
+  );
+  readonly myExpenses = computed<Expense[]>(() =>
+    this.allExpenses()
       .filter((expense) => expense.userId === this.currentUser?.id)
       .sort((a, b) => new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime())
-      .slice(0, 5);
-  }
+      .slice(0, 5),
+  );
+  private readonly expenseColumns = createExpenseColumns({
+    titleHeader: 'Title',
+    dateHeader: 'Date',
+    formatCategory: (category) => this.formatCategoryLabel(category),
+    formatAmount: (expense) => this.formatCurrency(expense.amount),
+    formatDate: (date) => this.formatDate(date),
+  });
+
+  readonly myExpensesTable = injectTable(() => ({
+    key: 'dashboard-my-expenses',
+    features: expenseTableFeatures,
+    columns: this.expenseColumns,
+    data: this.myExpenses(),
+    getRowId: (expense) => String(expense.id),
+    state: { sorting: this.myExpensesSorting() },
+    onSortingChange: (updater) =>
+      isFunction(updater)
+        ? this.myExpensesSorting.update(updater)
+        : this.myExpensesSorting.set(updater),
+  }));
+
+  readonly recentExpensesTable = injectTable(() => ({
+    key: 'dashboard-recent-expenses',
+    features: expenseTableFeatures,
+    columns: this.expenseColumns,
+    data: this.recentExpenses(),
+    getRowId: (expense) => String(expense.id),
+    state: { sorting: this.recentExpensesSorting() },
+    onSortingChange: (updater) =>
+      isFunction(updater)
+        ? this.recentExpensesSorting.update(updater)
+        : this.recentExpensesSorting.set(updater),
+  }));
 
   get chartOptions() {
-    const rows = this.monthlyApprovedSpending;
+    const rows = this.monthlyApprovedSpending();
     const series = defineChart({
       marks: [
         barY(rows, {
